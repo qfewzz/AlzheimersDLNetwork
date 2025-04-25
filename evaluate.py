@@ -77,7 +77,7 @@ data_shape = (200, 200, 150)
 device = sys.argv[-2]
 dataset_json_path = sys.argv[-1]
 try:
-    if os.path.isfile(dataset_json_path):
+    if dataset_json_path and os.path.isfile(dataset_json_path):
         MRI_images_list = json.loads(
             open(dataset_json_path, 'r', encoding='utf-8').read()
         )
@@ -194,7 +194,7 @@ def train(model, training_data, optimizer, criterion):
 def test(model, test_data, criterion):
     """takes (model, test_data, loss function) and returns the epoch loss."""
     model.eval()
-    epoch_loss = torch.tensor(0.0)
+    epoch_loss = torch.tensor(0.0).to(device)
     epoch_length = len(test_data)
     for i, patient_data in enumerate(test_data):
         print(f'\tbatch {i+1}/{epoch_length}')
