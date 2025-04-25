@@ -51,7 +51,7 @@ import argparse
 
 ## Hyperparameters
 
-BATCH_SIZE = 3
+BATCH_SIZE = 5
 # Dimensionality of the data outputted by the LSTM,
 # forwarded to the final dense layer.
 LSTM_output_size = 16
@@ -62,7 +62,7 @@ output_dimension = 2  # the number of predictions the model will make
 # update the splicing used in train()
 
 learning_rate = 0.1
-training_epochs = 10
+training_epochs = 30
 # The size of images passed, as a tuple
 data_shape = DIMESIONS
 # Other hyperparameters unlisted: the depth of the model, the kernel size, the padding, the channel restriction.
