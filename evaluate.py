@@ -237,11 +237,11 @@ def test(model, test_data, criterion):
 
                 loss = criterion(model_predictions, patient_endstate)
                 epoch_loss += loss
-                print("\tCurrent test loss ", loss)
             except Exception as e:
                 epoch_length -= 1
                 print("EXCEPTION CAUGHT:", e)
                 traceback.print_exc()
+        print("\tCurrent test loss ", epoch_loss)
 
     if epoch_length == 0:
         epoch_length = 0.000001
