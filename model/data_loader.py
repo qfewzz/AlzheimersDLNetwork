@@ -56,12 +56,13 @@ class MRIData(Dataset):
         # List to store the individual image tensors
         images_list = []
         # The last element in the current patient's array is the classification
-        patient_label = current_patient.pop()
+        patient_label = current_patient[-1]
         print(patient_label)
         # For each image path, process the .nii image using nibabel
-        for image_path in current_patient:
+        for image_path in current_patient[:-1]:
             print(image_path) #FIXME: delete this
             file_name = os.path.join(self.root_dir, image_path)
+            # file_name = r'G:\university\arshad\payan_name\open_source_projects\Alzheimers-DL-Network\data_sample\Data\MCI_to_AD\022_S_1394\MIDAS_Whole_Brain_Mask\2007-05-29_14_24_28.0\S34317\ADNI_022_S_1394_MR_MIDAS_Whole_Brain_Mask_Br_20120814182221239_S34317_I323573.nii'
             neuroimage = nib.load(file_name) # Loads proxy image
             # Extract the N-D array containing the image data from the nibabel image object
             image_data = neuroimage.get_fdata() # Retrieves array data

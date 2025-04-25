@@ -1,0 +1,4 @@
+data_sample/
+*.pyc
+.vscode/
+ad-model.pt
