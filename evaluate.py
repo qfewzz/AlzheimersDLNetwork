@@ -73,10 +73,11 @@ data_shape = (200, 200, 150)
 #     for data in MRI_images_list
 # ]
 
-
+device = sys.argv[-2]
+dataset_json_path = sys.argv[-1]
 try:
-    if os.path.isfile(sys.argv[-1]):
-        MRI_images_list = json.loads(open(sys.argv[-1], 'r', encoding='utf-8').read())
+    if os.path.isfile(dataset_json_path):
+        MRI_images_list = json.loads(open(dataset_json_path, 'r', encoding='utf-8').read())
         if not MRI_images_list:
             raise Exception()
     else:
@@ -107,7 +108,7 @@ test_data = test_loader
 
 
 ## Define Model
-model = Network(input_size, data_shape, output_dimension).to(args.device)
+model = Network(input_size, data_shape, output_dimension).to(device)
 
 loss_function = nn.CrossEntropyLoss()
 
@@ -128,14 +129,14 @@ def train(model, training_data, optimizer, criterion):
         # Clear gradients
         model.zero_grad()
         torch.cuda.empty_cache()  # Clear CUDA memory
-        batch_loss = torch.tensor(0.0).to(args.device)
+        batch_loss = torch.tensor(0.0).to(device)
 
         # Clear the LSTM hidden state after each patient
         model.hidden = model.init_hidden()
 
         # Get the MRI's and classifications for the current patient
         patient_markers = patient_data['num_images']
-        current_batch_patients_MRIs = patient_data["images"].to(args.device)
+        current_batch_patients_MRIs = patient_data["images"].to(device)
 
         patient_classifications = patient_data["label"]
         print("Patient batch classes ", patient_classifications)
@@ -155,7 +156,7 @@ def train(model, training_data, optimizer, criterion):
                     torch.ones(patient_real_MRIs_ignore_padding.size(0))
                     * patient_diagnosis
                 )
-                patient_endstate = patient_endstate.long().to(args.device)
+                patient_endstate = patient_endstate.long().to(device)
 
                 out = model(patient_real_MRIs_ignore_padding)
 
@@ -201,7 +202,7 @@ def test(model, test_data, criterion):
         model.hidden = model.init_hidden()
         # Get the MRI's and classifications for the current patient
         patient_markers = patient_data['num_images']
-        patient_MRIs = patient_data["images"].to(args.device)
+        patient_MRIs = patient_data["images"].to(device)
 
         patient_classifications = patient_data["label"]
         print("Patient batch classes ", patient_classifications)
@@ -217,7 +218,7 @@ def test(model, test_data, criterion):
                 patient_endstate = (
                     torch.ones(single_patient_MRIs.size(0)) * patient_diagnosis
                 )
-                patient_endstate = patient_endstate.long().to(args.device)
+                patient_endstate = patient_endstate.long().to(device)
 
                 out = model(single_patient_MRIs)
 
