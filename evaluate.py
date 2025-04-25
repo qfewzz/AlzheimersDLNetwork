@@ -8,7 +8,7 @@ import math
 import traceback
 import torch
 import torch.nn as nn
-
+import utils
 # import torch.nn.functional as F
 import torch.optim as optim
 from torch.utils.data import DataLoader
@@ -205,7 +205,7 @@ def test(model, test_data, criterion):
         #     print(f"\t\tTesting Progress:{i / len(test_data) * 100}%")
         # Clear gradients
         model.zero_grad()
-        torch.cuda.empty_cache()  # Clear CUDA memory
+        torch.cuda.empty_cache()
 
         # Clear the LSTM hidden state after each patient
         model.hidden = model.init_hidden()
@@ -239,6 +239,8 @@ def test(model, test_data, criterion):
                 model_predictions = out
 
                 loss = criterion(model_predictions, patient_endstate)
+                del patient_endstate
+                
                 epoch_loss += loss
             except Exception as e:
                 epoch_length -= 1

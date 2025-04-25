@@ -16,7 +16,7 @@ STANDARD_DIM3 = int(150 * 0.8)
 DIMESIONS = (STANDARD_DIM1, STANDARD_DIM2, STANDARD_DIM3)
 
 # Maximum number of images per patient
-MAX_NUM_IMAGES = 10
+MAX_NUM_IMAGES = 4
 
 
 class MRIData(Dataset):
