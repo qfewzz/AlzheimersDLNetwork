@@ -1,4 +1,4 @@
-""" Unified home for training and evaluation. Imports model and dataloader."""
+"""Unified home for training and evaluation. Imports model and dataloader."""
 
 import time
 import math
@@ -15,6 +15,7 @@ import random
 
 # Import network
 import sys
+
 sys.path.insert(1, './model')
 from network import Network
 from data_loader import MRIData
@@ -22,8 +23,9 @@ import argparse
 
 
 parser = argparse.ArgumentParser(description='Train and validate network.')
-parser.add_argument('--disable-cuda', action='store_true', default=False,
-                    help='Disable CUDA')
+parser.add_argument(
+    '--disable-cuda', action='store_true', default=False, help='Disable CUDA'
+)
 args = parser.parse_args()
 args.device = None
 print(args.disable_cuda)
@@ -41,13 +43,15 @@ torch.manual_seed(1)
 random.seed(1)
 
 # ============= Hyperparameters ===================
-BATCH_SIZE = 10 # FIXME: used to be 64
+BATCH_SIZE = 10  # FIXME: used to be 64
 # Dimensionality of the data outputted by the LSTM,
 # forwarded to the final dense layer. THIS IS A GUESS CURRENTLY.
 LSTM_output_size = 16
-input_size = 1 # FIXME: used to be 3 # Size of the processed MRI scans fed into the CNN.
+input_size = (
+    1  # FIXME: used to be 3 # Size of the processed MRI scans fed into the CNN.
+)
 
-output_dimension = 2 # the number of predictions the model will make
+output_dimension = 2  # the number of predictions the model will make
 # 2 used for binary prediction for each image.
 # update the splicing used in train()
 
@@ -82,7 +86,7 @@ train_size = int(0.7 * len(MRI_images_list))
 
 # Split list
 training_list = MRI_images_list[:train_size]
-test_list =  MRI_images_list[train_size:]
+test_list = MRI_images_list[train_size:]
 
 # print(MRI_images_list)
 
@@ -105,27 +109,29 @@ loss_function = nn.CrossEntropyLoss()
 # Perhaps use ADAM, if SGD doesn't give good results
 optimizer = optim.SGD(model.parameters(), lr=learning_rate)
 
+
 # training function
-def train(model,training_data,optimizer,criterion):
-    """ takes (model, training data, optimizer, loss function)"""
+def train(model, training_data, optimizer, criterion):
+    """takes (model, training data, optimizer, loss function)"""
     # activate training mode
     model.train()
     # initialize the per epoch loss
     epoch_loss = 0
     epoch_length = len(training_data)
     for i, patient_data in enumerate(training_data):
-        if i % (math.floor(epoch_length / 5) + 1) == 0: print(f"\t\tTraining Progress:{i / len(training_data) * 100}%")
+        if i % (math.floor(epoch_length / 5) + 1) == 0:
+            print(f"\t\tTraining Progress:{i / len(training_data) * 100}%")
         # Clear gradients
         model.zero_grad()
-        torch.cuda.empty_cache() # clear cuda memory
-        batch_loss=torch.tensor(0.0).to(args.device,dtype=torch.half)
+        torch.cuda.empty_cache()  # clear cuda memory
+        batch_loss = torch.tensor(0.0).to(args.device, dtype=torch.half)
         # clear the LSTM hidden state after each patient
         # print("Well, the model.hidden is",model.hidden)
         model.hidden = model.init_hidden()
         # print("Patient data is ",patient_data, "with shape",patient_data['images'].shape)
-        #get the MRI's and classifications for the current patient
+        # get the MRI's and classifications for the current patient
         patient_markers = patient_data['num_images']
-        patient_MRIs = patient_data["images"].to(args.device,dtype=torch.half)
+        patient_MRIs = patient_data["images"].to(args.device, dtype=torch.half)
         # patient_MRI = patient_MRI.to(device=args.device)
         # print(patient_MRI.shape)
 
@@ -135,39 +141,43 @@ def train(model,training_data,optimizer,criterion):
             try:
                 # clear hidden states to give each patient a clean slate
                 model.hidden = model.init_hidden()
-                single_patient_MRIs = patient_MRIs[x][:patient_markers[x]].view(-1,1,data_shape[0],data_shape[1],data_shape[2])
+                single_patient_MRIs = patient_MRIs[x][: patient_markers[x]].view(
+                    -1, 1, data_shape[0], data_shape[1], data_shape[2]
+                )
                 # print("Single patient MRIs are ",single_patient_MRIs,"with shape",single_patient_MRIs.shape)
 
                 patient_diagnosis = patient_classifications[x]
                 # print("patient diagnosis is ",patient_diagnosis)
                 # print("single_patient_MRI size 0 gives ",single_patient_MRIs.size(0))
-                patient_endstate = torch.ones(single_patient_MRIs.size(0)) * patient_diagnosis
+                patient_endstate = (
+                    torch.ones(single_patient_MRIs.size(0)) * patient_diagnosis
+                )
                 patient_endstate = patient_endstate.long().to(args.device)
 
                 out = model(single_patient_MRIs)
 
-                if len(out.shape)==1:
-                    out = out[None,...]# in the case of a single input, we need padding
+                if len(out.shape) == 1:
+                    out = out[
+                        None, ...
+                    ]  # in the case of a single input, we need padding
 
-                print("model predictions are ",out)
-                print("patient endstate is ",patient_endstate)
+                print("model predictions are ", out)
+                print("patient endstate is ", patient_endstate)
                 model_predictions = out
 
                 # print("model predictions are ",model_predictions)
                 loss = criterion(model_predictions, patient_endstate)
                 batch_loss += loss
             except Exception as e:
-                print("EXCEPTION CAUGHT:",e)
+                print("EXCEPTION CAUGHT:", e)
         batch_loss.backward()
-        print("batch loss is",batch_loss)
+        print("batch loss is:", batch_loss)
         optimizer.step()
         epoch_loss += batch_loss
 
-    if epoch_length == 0: epoch_length = 0.000001
+    if epoch_length == 0:
+        epoch_length = 0.000001
     return epoch_loss / epoch_length
-
-
-
 
 
 def test(model, test_data, criterion):
@@ -176,10 +186,11 @@ def test(model, test_data, criterion):
     epoch_loss = torch.tensor(0.0)
     epoch_length = len(test_data)
     for i, patient_data in enumerate(test_data):
-        if i % (math.floor(epoch_length / 5) + 1) == 0: print(f"\t\tTesting Progress:{i / len(test_data) * 100}%")
+        if i % (math.floor(epoch_length / 5) + 1) == 0:
+            print(f"\t\tTesting Progress:{i / len(test_data) * 100}%")
         # Clear gradients
         model.zero_grad()
-        torch.cuda.empty_cache() # clear cuda memory
+        torch.cuda.empty_cache()  # clear cuda memory
 
         # clear the LSTM hidden state after each patient
         # print("Well, the model.hidden is",model.hidden)
@@ -187,7 +198,7 @@ def test(model, test_data, criterion):
         # print("Patient data is ", patient_data, "with shape", patient_data['images'].shape)
         # get the MRI's and classifications for the current patient
         patient_markers = patient_data['num_images']
-        patient_MRIs = patient_data["images"].to(args.device,dtype=torch.half)
+        patient_MRIs = patient_data["images"].to(args.device, dtype=torch.half)
         # patient_MRI = patient_MRI.to(device=args.device)
         # print(patient_MRI.shape)
 
@@ -197,30 +208,37 @@ def test(model, test_data, criterion):
             try:
                 # clear hidden states to give each patient a clean slate
                 model.hidden = model.init_hidden()
-                single_patient_MRIs = patient_MRIs[x][:patient_markers[x]].view(-1, 1, data_shape[0], data_shape[1],
-                                                                                data_shape[2])
+                single_patient_MRIs = patient_MRIs[x][: patient_markers[x]].view(
+                    -1, 1, data_shape[0], data_shape[1], data_shape[2]
+                )
                 # print("Single patient MRIs are ", single_patient_MRIs, "with shape", single_patient_MRIs.shape)
                 patient_diagnosis = patient_classifications[x]
-                patient_endstate = torch.ones(single_patient_MRIs.size(0)) * patient_diagnosis
+                patient_endstate = (
+                    torch.ones(single_patient_MRIs.size(0)) * patient_diagnosis
+                )
                 patient_endstate = patient_endstate.long().to(args.device)
 
                 out = model(single_patient_MRIs)
 
-                if len(out.shape)==1:
-                    out = out[None,...]# in the case of a single input, we need padding
+                if len(out.shape) == 1:
+                    out = out[
+                        None, ...
+                    ]  # in the case of a single input, we need padding
 
                 model_predictions = out
 
                 # print("model predictions are ",model_predictions)
                 loss = criterion(model_predictions, patient_endstate)
                 epoch_loss += loss
-                print("Current test loss ",loss)
+                print("Current test loss ", loss)
             except Exception as e:
                 epoch_length -= 1
                 print("EXCEPTION CAUGHT:", e)
 
-    if epoch_length == 0: epoch_length = 0.000001
+    if epoch_length == 0:
+        epoch_length = 0.000001
     return epoch_loss / epoch_length
+
 
 # perform training and measure test accuracy. Save best performing model.
 best_test_accuracy = float('inf')
@@ -235,17 +253,18 @@ for epoch in range(training_epochs):
 
     end_time = time.time()
 
-    epoch_mins = math.floor((end_time-start_time)/60)
-    epoch_secs = math.floor((end_time-start_time)%60)
+    epoch_mins = math.floor((end_time - start_time) / 60)
+    epoch_secs = math.floor((end_time - start_time) % 60)
 
-    print(f"Hurrah! Epoch {epoch + 1}/{training_epochs} concludes. | Time: {epoch_mins}m {epoch_secs}s")
-    print(f"\tTrain Loss: {train_loss:.3f}| Train Perplexity: {math.exp(train_loss):7.3f}")
+    print(
+        f"Hurrah! Epoch {epoch + 1}/{training_epochs} concludes. | Time: {epoch_mins}m {epoch_secs}s"
+    )
+    print(
+        f"\tTrain Loss: {train_loss:.3f}| Train Perplexity: {math.exp(train_loss):7.3f}"
+    )
     print(f"\tTest Loss: {test_loss:.3f}| Test Perplexity: {math.exp(test_loss):7.3f}")
 
-
-    if test_loss<best_test_accuracy:
+    if test_loss < best_test_accuracy:
         print("...that was our best test accuracy yet!")
-        best_test_accuracy=test_loss
-        torch.save(model.state_dict(),'ad-model.pt')
-
-
+        best_test_accuracy = test_loss
+        torch.save(model.state_dict(), 'ad-model.pt')

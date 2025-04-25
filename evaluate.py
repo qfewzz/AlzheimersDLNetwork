@@ -51,7 +51,7 @@ import argparse
 
 ## Hyperparameters
 
-BATCH_SIZE = 5
+BATCH_SIZE = 10
 # Dimensionality of the data outputted by the LSTM,
 # forwarded to the final dense layer.
 LSTM_output_size = 16
@@ -185,7 +185,7 @@ def train(model, training_data, optimizer, criterion):
         batch_loss.backward()
         optimizer.step()
         epoch_loss += batch_loss
-        print("\batch_loss: ", batch_loss)
+        print("\tbatch_loss: ", batch_loss)
     # print("\tepoch_loss: ", epoch_loss)
 
     # print("\tepoch_loss: ", epoch_loss)
@@ -255,7 +255,7 @@ def test(model, test_data, criterion):
             
             epoch_loss += batch_loss.item()
             utils.clear()
-            print("\batch_loss: ", batch_loss)
+            print("\tbatch_loss: ", batch_loss)
     # print("\tepoch_loss: ", epoch_loss)
 
     if epoch_length == 0:
@@ -285,6 +285,7 @@ for epoch in range(training_epochs):
     epoch_mins = math.floor((end_time - start_time) / 60)
     epoch_secs = math.floor((end_time - start_time) % 60)
 
+    print()
     print(
         f"Hurrah! Epoch {epoch + 1}/{training_epochs} concludes. | Time: {epoch_mins}m {epoch_secs}s"
     )
@@ -298,4 +299,5 @@ for epoch in range(training_epochs):
         best_test_accuracy = test_loss
         torch.save(model.state_dict(), 'ad-model.pt')
     
+    print('-'*20)
     utils.clear()
