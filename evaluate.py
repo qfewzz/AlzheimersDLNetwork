@@ -186,7 +186,8 @@ def train(model, training_data, optimizer, criterion):
         batch_loss.backward()
         optimizer.step()
         epoch_loss += batch_loss
-    print("\tepoch_loss: ", epoch_loss)
+        print("\batch_loss: ", batch_loss)
+    # print("\tepoch_loss: ", epoch_loss)
 
     # print("\tepoch_loss: ", epoch_loss)
 
@@ -251,9 +252,9 @@ def test(model, test_data, criterion):
                 epoch_length -= 1
                 print("EXCEPTION CAUGHT:", e)
                 traceback.print_exc()
-        # print("\tepoch_loss: ", epoch_loss)
         epoch_loss += batch_loss
-    print("\tepoch_loss: ", epoch_loss)
+        print("\batch_loss: ", batch_loss)
+    # print("\tepoch_loss: ", epoch_loss)
 
     if epoch_length == 0:
         epoch_length = 0.000001
