@@ -4,6 +4,7 @@ import os
 import json
 import time
 import math
+import traceback
 import torch
 import torch.nn as nn
 
@@ -77,7 +78,9 @@ device = sys.argv[-2]
 dataset_json_path = sys.argv[-1]
 try:
     if os.path.isfile(dataset_json_path):
-        MRI_images_list = json.loads(open(dataset_json_path, 'r', encoding='utf-8').read())
+        MRI_images_list = json.loads(
+            open(dataset_json_path, 'r', encoding='utf-8').read()
+        )
         if not MRI_images_list:
             raise Exception()
     else:
@@ -124,8 +127,9 @@ def train(model, training_data, optimizer, criterion):
     epoch_loss = 0
     epoch_length = len(training_data)
     for i, patient_data in enumerate(training_data):
-        if i % (math.floor(epoch_length / 5) + 1) == 0:
-            print(f"\t\tTraining Progress:{i / len(training_data) * 100}%")
+        print(f'\tbatch {i+1}/{epoch_length}')
+        # if i % (math.floor(epoch_length / 5) + 1) == 0:
+            # print(f"\t\tTraining Progress:{i / len(training_data) * 100}%")
         # Clear gradients
         model.zero_grad()
         torch.cuda.empty_cache()  # Clear CUDA memory
@@ -139,7 +143,7 @@ def train(model, training_data, optimizer, criterion):
         current_batch_patients_MRIs = patient_data["images"].to(device)
 
         patient_classifications = patient_data["label"]
-        print("Patient batch classes ", patient_classifications)
+        # print("Patient batch classes ", patient_classifications)
 
         for index_patient_mri in range(len(current_batch_patients_MRIs)):
             try:
@@ -165,8 +169,8 @@ def train(model, training_data, optimizer, criterion):
                         None, ...
                     ]  # In the case of a single input, we need padding
 
-                print("model predictions are ", out)
-                print("patient endstate is ", patient_endstate)
+                # print("model predictions are ", out)
+                # print("patient endstate is ", patient_endstate)
                 model_predictions = out
 
                 loss = criterion(model_predictions, patient_endstate)
@@ -174,9 +178,10 @@ def train(model, training_data, optimizer, criterion):
 
             except Exception as e:
                 print("EXCEPTION CAUGHT:", e)
+                traceback.print_exc()
 
         batch_loss.backward()
-        print("batch loss is", batch_loss)
+        print("\tbatch loss is", batch_loss)
         optimizer.step()
         epoch_loss += batch_loss
 
@@ -192,8 +197,9 @@ def test(model, test_data, criterion):
     epoch_loss = torch.tensor(0.0)
     epoch_length = len(test_data)
     for i, patient_data in enumerate(test_data):
-        if i % (math.floor(epoch_length / 5) + 1) == 0:
-            print(f"\t\tTesting Progress:{i / len(test_data) * 100}%")
+        print(f'\tbatch {i+1}/{epoch_length}')
+        # if i % (math.floor(epoch_length / 5) + 1) == 0:
+        #     print(f"\t\tTesting Progress:{i / len(test_data) * 100}%")
         # Clear gradients
         model.zero_grad()
         torch.cuda.empty_cache()  # Clear CUDA memory
@@ -205,7 +211,7 @@ def test(model, test_data, criterion):
         patient_MRIs = patient_data["images"].to(device)
 
         patient_classifications = patient_data["label"]
-        print("Patient batch classes ", patient_classifications)
+        # print("Patient batch classes ", patient_classifications)
         for x in range(len(patient_MRIs)):
             try:
                 # Clear hidden states to give each patient a clean slate
@@ -231,10 +237,11 @@ def test(model, test_data, criterion):
 
                 loss = criterion(model_predictions, patient_endstate)
                 epoch_loss += loss
-                print("Current test loss ", loss)
+                print("\tCurrent test loss ", loss)
             except Exception as e:
                 epoch_length -= 1
                 print("EXCEPTION CAUGHT:", e)
+                traceback.print_exc()
 
     if epoch_length == 0:
         epoch_length = 0.000001
@@ -247,10 +254,11 @@ best_test_accuracy = float('inf')
 # This evaluation workflow below was adapted from Ben Trevett's design
 # on https://github.com/bentrevett/pytorch-seq2seq/blob/master/1%20-%20Sequence%20to%20Sequence%20Learning%20with%20Neural%20Networks.ipynb
 for epoch in range(training_epochs):
-
+    print(f'starting epoch {epoch+1}/{training_epochs}')
     start_time = time.time()
-
+    print('start training...')
     train_loss = train(model, training_data, optimizer, loss_function)
+    print('start testing...')
     test_loss = test(model, test_data, loss_function)
 
     end_time = time.time()

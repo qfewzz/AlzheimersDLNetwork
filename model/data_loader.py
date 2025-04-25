@@ -57,10 +57,10 @@ class MRIData(Dataset):
         images_list = []
         # The last element in the current patient's array is the classification
         patient_label = current_patient[-1]
-        print(patient_label)
+        # print(patient_label)
         # For each image path, process the .nii image using nibabel
         for image_path in current_patient[:-1]:
-            print(image_path) #FIXME: delete this
+            # print(image_path) #FIXME: delete this
             file_name = os.path.join(self.root_dir, image_path)
             # file_name = r'G:\university\arshad\payan_name\open_source_projects\Alzheimers-DL-Network\data_sample\Data\MCI_to_AD\022_S_1394\MIDAS_Whole_Brain_Mask\2007-05-29_14_24_28.0\S34317\ADNI_022_S_1394_MR_MIDAS_Whole_Brain_Mask_Br_20120814182221239_S34317_I323573.nii'
             neuroimage = nib.load(file_name) # Loads proxy image
@@ -77,7 +77,7 @@ class MRIData(Dataset):
             scale_factor3 = STANDARD_DIM3 / float(current_dim3)
             # Resize image (spline interpolation)
             image_data = ndimage.zoom(image_data, (scale_factor1, scale_factor2, scale_factor3))
-            print("Resize success") #FIXME: delete this
+            # print("Resize success") #FIXME: delete this
             # Convert image data to a tensor
             image_data_tensor = torch.Tensor(image_data) 
             images_list.append(image_data_tensor)
