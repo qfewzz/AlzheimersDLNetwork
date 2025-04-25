@@ -49,7 +49,7 @@ import argparse
 
 ## Hyperparameters
 
-BATCH_SIZE = 3
+BATCH_SIZE = 1
 # Dimensionality of the data outputted by the LSTM,
 # forwarded to the final dense layer.
 LSTM_output_size = 16

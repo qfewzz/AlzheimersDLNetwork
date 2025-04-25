@@ -72,9 +72,9 @@ class MRIData(Dataset):
             current_dim2 = image_size[1]
             current_dim3 = image_size[2]
             # Calculate scale factor for each direction
-            scale_factor1 = STANDARD_DIM1 / float(current_dim1)
-            scale_factor2 = STANDARD_DIM2 / float(current_dim2)
-            scale_factor3 = STANDARD_DIM3 / float(current_dim3)
+            scale_factor1 = STANDARD_DIM1 / float(current_dim1) * 0.8
+            scale_factor2 = STANDARD_DIM2 / float(current_dim2) * 0.8
+            scale_factor3 = STANDARD_DIM3 / float(current_dim3) * 0.8
             # Resize image (spline interpolation)
             image_data = ndimage.zoom(image_data, (scale_factor1, scale_factor2, scale_factor3))
             # print("Resize success") #FIXME: delete this
