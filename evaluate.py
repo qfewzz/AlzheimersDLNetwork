@@ -51,7 +51,7 @@ import argparse
 
 ## Hyperparameters
 
-BATCH_SIZE = 10
+BATCH_SIZE = 3
 # Dimensionality of the data outputted by the LSTM,
 # forwarded to the final dense layer.
 LSTM_output_size = 16
@@ -214,6 +214,7 @@ def test(model, test_data, criterion):
 
             # Clear the LSTM hidden state after each patient
             model.hidden = model.init_hidden()
+            
             # Get the MRI's and classifications for the current patient
             patient_markers = patient_data['num_images']
             current_batch_patients_MRIs = patient_data["images"].to(device)
