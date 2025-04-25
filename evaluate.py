@@ -23,8 +23,9 @@ import random
 import sys
 
 sys.path.insert(1, './model')
+import model.network
 from model.network import Network
-from model.data_loader import MRIData
+from model.data_loader import MRIData, DIMESIONS
 import argparse
 
 
@@ -62,7 +63,7 @@ output_dimension = 2  # the number of predictions the model will make
 learning_rate = 0.1
 training_epochs = 10
 # The size of images passed, as a tuple
-data_shape = (200, 200, 150)
+data_shape = DIMESIONS
 # Other hyperparameters unlisted: the depth of the model, the kernel size, the padding, the channel restriction.
 
 
