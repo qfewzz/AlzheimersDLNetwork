@@ -50,7 +50,7 @@ import argparse
 
 ## Hyperparameters
 
-BATCH_SIZE = 1
+BATCH_SIZE = 3
 # Dimensionality of the data outputted by the LSTM,
 # forwarded to the final dense layer.
 LSTM_output_size = 16
@@ -183,9 +183,10 @@ def train(model, training_data, optimizer, criterion):
                 traceback.print_exc()
 
         batch_loss.backward()
-        print("\tbatch loss is", batch_loss)
         optimizer.step()
         epoch_loss += batch_loss
+        
+    # print("\tepoch_loss: ", epoch_loss)
 
     if epoch_length == 0:
         epoch_length = 0.000001
@@ -243,7 +244,8 @@ def test(model, test_data, criterion):
                 epoch_length -= 1
                 print("EXCEPTION CAUGHT:", e)
                 traceback.print_exc()
-        print("\tCurrent test loss ", epoch_loss)
+        # print("\tepoch_loss: ", epoch_loss)
+    # print("\tepoch_loss: ", epoch_loss)
 
     if epoch_length == 0:
         epoch_length = 0.000001
@@ -278,11 +280,11 @@ for epoch in range(training_epochs):
         f"Hurrah! Epoch {epoch + 1}/{training_epochs} concludes. | Time: {epoch_mins}m {epoch_secs}s"
     )
     print(
-        f"\tTrain Loss: {train_loss:.3f}| Train Perplexity: {math.exp(train_loss):7.3f}"
+        f"Train Loss:\t{train_loss:.3f} | Train Perplexity:\t{math.exp(train_loss):7.3f}"
     )
-    print(f"\tTest Loss: {test_loss:.3f}| Test Perplexity: {math.exp(test_loss):7.3f}")
+    print(f"Test Loss:\t{test_loss:.3f} | Test Perplexity:\t{math.exp(test_loss):7.3f}")
 
     if test_loss < best_test_accuracy:
-        print("...that was our best test accuracy yet!")
+        print("* that was our best test accuracy yet!")
         best_test_accuracy = test_loss
         torch.save(model.state_dict(), 'ad-model.pt')

@@ -10,9 +10,9 @@ import nibabel as nib
 from scipy import ndimage
 
 # Dimensions of neuroimages after resizing
-STANDARD_DIM1 = int(200 * 0.8)
-STANDARD_DIM2 = int(200 * 0.8)
-STANDARD_DIM3 = int(150 * 0.8)
+STANDARD_DIM1 = int(200 * 0.9)
+STANDARD_DIM2 = int(200 * 0.9)
+STANDARD_DIM3 = int(150 * 0.9)
 DIMESIONS = (STANDARD_DIM1, STANDARD_DIM2, STANDARD_DIM3)
 
 # Maximum number of images per patient
