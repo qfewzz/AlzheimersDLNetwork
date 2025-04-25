@@ -1,5 +1,6 @@
 """Unified home for training and evaluation. Imports model and dataloader."""
 
+import gc
 import os
 import json
 import time
@@ -257,9 +258,15 @@ for epoch in range(training_epochs):
     print(f'starting epoch {epoch+1}/{training_epochs}')
     start_time = time.time()
     print('start training...')
+    
     train_loss = train(model, training_data, optimizer, loss_function)
+    gc.collect()
+    torch.cuda.empty_cache()
+    
     print('start testing...')
     test_loss = test(model, test_data, loss_function)
+    gc.collect()
+    torch.cuda.empty_cache()
 
     end_time = time.time()
 
