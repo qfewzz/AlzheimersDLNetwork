@@ -9,6 +9,7 @@ import traceback
 import torch
 import torch.nn as nn
 import utils
+
 # import torch.nn.functional as F
 import torch.optim as optim
 from torch.utils.data import DataLoader
@@ -131,10 +132,10 @@ def train(model, training_data, optimizer, criterion):
     for i, patient_data in enumerate(training_data):
         print(f'\tbatch {i+1}/{epoch_length}')
         # if i % (math.floor(epoch_length / 5) + 1) == 0:
-            # print(f"\t\tTraining Progress:{i / len(training_data) * 100}%")
+        # print(f"\t\tTraining Progress:{i / len(training_data) * 100}%")
         # Clear gradients
         model.zero_grad()
-        torch.cuda.empty_cache()  # Clear CUDA memory
+        utils.clear()
         batch_loss = torch.tensor(0.0).to(device)
 
         # Clear the LSTM hidden state after each patient
@@ -185,7 +186,8 @@ def train(model, training_data, optimizer, criterion):
         batch_loss.backward()
         optimizer.step()
         epoch_loss += batch_loss
-        
+    print("\tepoch_loss: ", epoch_loss)
+
     # print("\tepoch_loss: ", epoch_loss)
 
     if epoch_length == 0:
@@ -197,7 +199,8 @@ def train(model, training_data, optimizer, criterion):
 def test(model, test_data, criterion):
     """takes (model, test_data, loss function) and returns the epoch loss."""
     model.eval()
-    epoch_loss = torch.tensor(0.0).to(device)
+    epoch_loss = 0
+    # epoch_loss = torch.tensor(0.0).to(device)
     epoch_length = len(test_data)
     for i, patient_data in enumerate(test_data):
         print(f'\tbatch {i+1}/{epoch_length}')
@@ -205,31 +208,35 @@ def test(model, test_data, criterion):
         #     print(f"\t\tTesting Progress:{i / len(test_data) * 100}%")
         # Clear gradients
         model.zero_grad()
-        torch.cuda.empty_cache()
+        utils.clear()
+        batch_loss = torch.tensor(0.0).to(device)
 
         # Clear the LSTM hidden state after each patient
         model.hidden = model.init_hidden()
         # Get the MRI's and classifications for the current patient
         patient_markers = patient_data['num_images']
-        patient_MRIs = patient_data["images"].to(device)
+        current_batch_patients_MRIs = patient_data["images"].to(device)
 
         patient_classifications = patient_data["label"]
         # print("Patient batch classes ", patient_classifications)
-        for x in range(len(patient_MRIs)):
+
+        for index_patient_mri in range(len(current_batch_patients_MRIs)):
             try:
                 # Clear hidden states to give each patient a clean slate
                 model.hidden = model.init_hidden()
-                single_patient_MRIs = patient_MRIs[x][: patient_markers[x]].view(
+                patient_real_MRIs_ignore_padding = current_batch_patients_MRIs[
+                    index_patient_mri
+                ][: patient_markers[index_patient_mri]].view(
                     -1, 1, data_shape[0], data_shape[1], data_shape[2]
                 )
-                single_patient_MRIs = single_patient_MRIs
-                patient_diagnosis = patient_classifications[x]
+                patient_diagnosis = patient_classifications[index_patient_mri]
                 patient_endstate = (
-                    torch.ones(single_patient_MRIs.size(0)) * patient_diagnosis
+                    torch.ones(patient_real_MRIs_ignore_padding.size(0))
+                    * patient_diagnosis
                 )
                 patient_endstate = patient_endstate.long().to(device)
 
-                out = model(single_patient_MRIs)
+                out = model(patient_real_MRIs_ignore_padding)
 
                 if len(out.shape) == 1:
                     out = out[
@@ -239,15 +246,14 @@ def test(model, test_data, criterion):
                 model_predictions = out
 
                 loss = criterion(model_predictions, patient_endstate)
-                del patient_endstate
-                
-                epoch_loss += loss
+                batch_loss += loss
             except Exception as e:
                 epoch_length -= 1
                 print("EXCEPTION CAUGHT:", e)
                 traceback.print_exc()
         # print("\tepoch_loss: ", epoch_loss)
-    # print("\tepoch_loss: ", epoch_loss)
+        epoch_loss += batch_loss
+    print("\tepoch_loss: ", epoch_loss)
 
     if epoch_length == 0:
         epoch_length = 0.000001
@@ -263,11 +269,11 @@ for epoch in range(training_epochs):
     print(f'starting epoch {epoch+1}/{training_epochs}')
     start_time = time.time()
     print('start training...')
-    
+
     train_loss = train(model, training_data, optimizer, loss_function)
     gc.collect()
     torch.cuda.empty_cache()
-    
+
     print('start testing...')
     test_loss = test(model, test_data, loss_function)
     gc.collect()
