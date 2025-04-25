@@ -76,7 +76,7 @@ data_shape = (200, 200, 150)
 
 try:
     if os.path.isfile(sys.argv[-1]):
-        MRI_images_list = json.loads(sys.argv[-1])
+        MRI_images_list = json.loads(open(sys.argv[-1], 'r', encoding='utf-8').read())
         if not MRI_images_list:
             raise Exception()
     else:
