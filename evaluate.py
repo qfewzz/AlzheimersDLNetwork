@@ -51,7 +51,7 @@ import argparse
 
 ## Hyperparameters
 
-BATCH_SIZE = 5
+BATCH_SIZE = 10
 # Dimensionality of the data outputted by the LSTM,
 # forwarded to the final dense layer.
 LSTM_output_size = 16
@@ -202,7 +202,7 @@ def test(model, test_data, criterion):
     epoch_loss = 0
     # epoch_loss = torch.tensor(0.0).to(device)
     epoch_length = len(test_data)
-    with torch.no_grad(): 
+    with torch.no_grad():
         for i, patient_data in enumerate(test_data):
             print(f'\tbatch {i+1}/{epoch_length}')
             # if i % (math.floor(epoch_length / 5) + 1) == 0:
@@ -214,7 +214,7 @@ def test(model, test_data, criterion):
 
             # Clear the LSTM hidden state after each patient
             model.hidden = model.init_hidden()
-            
+
             # Get the MRI's and classifications for the current patient
             patient_markers = patient_data['num_images']
             current_batch_patients_MRIs = patient_data["images"].to(device)
@@ -253,7 +253,7 @@ def test(model, test_data, criterion):
                     epoch_length -= 1
                     print("EXCEPTION CAUGHT:", e)
                     traceback.print_exc()
-            
+
             epoch_loss += batch_loss.item()
             utils.clear()
             print("\tbatch_loss: ", batch_loss)
@@ -299,6 +299,6 @@ for epoch in range(training_epochs):
         print("that was our best test accuracy yet!")
         best_test_accuracy = test_loss
         torch.save(model.state_dict(), 'ad-model.pt')
-    
-    print('-'*20)
+
+    print('-' * 20)
     utils.clear()
