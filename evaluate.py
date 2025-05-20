@@ -129,6 +129,8 @@ def train(model, training_data, optimizer, criterion):
     # Initialize the per epoch loss
     epoch_loss = 0
     epoch_length = len(training_data)
+    correct_predictions = 0
+    total_predictions = 0
     for i, patient_data in enumerate(training_data):
         print(f'\tbatch {i+1}/{epoch_length}')
         # if i % (math.floor(epoch_length / 5) + 1) == 0:
@@ -178,6 +180,12 @@ def train(model, training_data, optimizer, criterion):
 
                 loss = criterion(model_predictions, patient_endstate)
                 batch_loss += loss
+
+                # Calculate accuracy
+                predicted_classes = torch.argmax(model_predictions, dim=1)
+                correct_predictions += (predicted_classes == patient_endstate).sum().item()
+                total_predictions += patient_endstate.size(0)
+
             except Exception as e:
                 print("EXCEPTION CAUGHT:", e)
                 traceback.print_exc()
@@ -192,7 +200,9 @@ def train(model, training_data, optimizer, criterion):
 
     if epoch_length == 0:
         epoch_length = 0.000001
-    return epoch_loss / epoch_length
+    
+    accuracy = correct_predictions / total_predictions if total_predictions > 0 else 0.0
+    return epoch_loss / epoch_length, accuracy
 
 
 ## Testing Function
@@ -202,6 +212,8 @@ def test(model, test_data, criterion):
     epoch_loss = 0
     # epoch_loss = torch.tensor(0.0).to(device)
     epoch_length = len(test_data)
+    correct_predictions = 0
+    total_predictions = 0
     with torch.no_grad():
         for i, patient_data in enumerate(test_data):
             print(f'\tbatch {i+1}/{epoch_length}')
@@ -249,19 +261,27 @@ def test(model, test_data, criterion):
 
                     loss = criterion(model_predictions, patient_endstate)
                     batch_loss += loss.item()
+
+                    # Calculate accuracy
+                    predicted_classes = torch.argmax(model_predictions, dim=1)
+                    correct_predictions += (predicted_classes == patient_endstate).sum().item()
+                    total_predictions += patient_endstate.size(0)
+
                 except Exception as e:
                     epoch_length -= 1
                     print("EXCEPTION CAUGHT:", e)
                     traceback.print_exc()
 
-            epoch_loss += batch_loss.item()
+            epoch_loss += batch_loss
             utils.clear()
             print("\tbatch_loss: ", batch_loss)
     # print("\tepoch_loss: ", epoch_loss)
 
     if epoch_length == 0:
         epoch_length = 0.000001
-    return epoch_loss / epoch_length
+    
+    accuracy = correct_predictions / total_predictions if total_predictions > 0 else 0.0
+    return epoch_loss / epoch_length, accuracy
 
 
 # Perform training and measure test accuracy. Save best performing model.
@@ -274,11 +294,11 @@ for epoch in range(training_epochs):
     start_time = time.time()
     print('start training...')
 
-    train_loss = train(model, training_data, optimizer, loss_function)
+    train_loss, train_accuracy = train(model, training_data, optimizer, loss_function)
     utils.clear()
 
     print('start testing...')
-    test_loss = test(model, test_data, loss_function)
+    test_loss, test_accuracy = test(model, test_data, loss_function)
     utils.clear()
 
     end_time = time.time()
@@ -291,9 +311,9 @@ for epoch in range(training_epochs):
         f"Hurrah! Epoch {epoch + 1}/{training_epochs} concludes. | Time: {epoch_mins}m {epoch_secs}s"
     )
     print(
-        f"Train Loss:\t{train_loss:.3f} | Train Perplexity:\t{math.exp(train_loss):7.3f}"
+        f"Train Loss:\t{train_loss:.3f} | Train Perplexity:\t{math.exp(train_loss):7.3f} | Train Accuracy: {train_accuracy:.3f}"
     )
-    print(f"Test Loss:\t{test_loss:.3f} | Test Perplexity:\t{math.exp(test_loss):7.3f}")
+    print(f"Test Loss:\t{test_loss:.3f} | Test Perplexity:\t{math.exp(test_loss):7.3f} | Test Accuracy: {test_accuracy:.3f}")
 
     if test_loss < best_test_accuracy:
         print("that was our best test accuracy yet!")
