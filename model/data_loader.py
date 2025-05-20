@@ -1,5 +1,6 @@
 import os
-import sys  # possibly don't need
+import sys
+import time  # possibly don't need
 import numpy as np
 
 import torch
@@ -10,9 +11,9 @@ import nibabel as nib
 from scipy import ndimage
 
 # Dimensions of neuroimages after resizing
-STANDARD_DIM1 = int(200 * 0.95)
-STANDARD_DIM2 = int(200 * 0.95)
-STANDARD_DIM3 = int(150 * 0.95)
+STANDARD_DIM1 = int(200 * 0.85)
+STANDARD_DIM2 = int(200 * 0.85)
+STANDARD_DIM3 = int(150 * 0.85)
 DIMESIONS = (STANDARD_DIM1, STANDARD_DIM2, STANDARD_DIM3)
 
 # Maximum number of images per patient
@@ -52,6 +53,9 @@ class MRIData(Dataset):
         Allows indexing of dataset      (required by DataLoader)
         Returns a tensor that contains the patient's MRI neuroimages and their diagnoses (AD or MCI)
         """
+
+        print(f'*** start __getitem__: {index}')
+        t = time.time()
 
         # Get current_patient, where [0] is their ID and [1] is their list of images
         current_patient = self.data_array[index]
@@ -107,5 +111,11 @@ class MRIData(Dataset):
             'label': patient_label,
             'num_images': num_images,
         }
+        
+        t = time.time() - t
+        print(f'*** end __getitem__: {index}, tool {t:.2f}')
 
         return image_dict
+
+        def cache(self, file_path: str):
+            pass
