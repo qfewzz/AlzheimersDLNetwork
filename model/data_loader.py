@@ -58,20 +58,13 @@ class MRIData(Dataset):
         Allows indexing of dataset      (required by DataLoader)
         Returns a tensor that contains the patient's MRI neuroimages and their diagnoses (AD or MCI)
         """
-
-        print(f'*** start __getitem__: {index}')
-        t = time.time()
-
         # Get current_patient, where [0] is their ID and [1] is their list of images
         current_patient_images_label = self.data_array[index]
         # List to store the individual image tensors
         # The last element in the current patient's array is the classification
         # print(patient_label)
         # For each image path, process the .nii image using nibabel
-        image_dict = self.get(current_patient_images_label)
-
-        t = time.time() - t
-        print(f'*** end __getitem__: {index}, took {t:.2f}s')
+        image_dict = self.get(current_patient_images_label, index)
 
         return image_dict
 
@@ -128,7 +121,10 @@ class MRIData(Dataset):
 
         return image_dict
 
-    def get(self, current_patient_images_label: list):
+    def get(self, current_patient_images_label: list, index: int):
+        print(f'\t*start get: {index}')
+        t = time.time()
+
         hash_str = hashlib.sha256(
             pickle.dumps(current_patient_images_label)
         ).hexdigest()
@@ -143,7 +139,14 @@ class MRIData(Dataset):
                 pickle.dump(image_dict, file)
             open(cache_health_file_path, 'w').close()
         
-        return image_dict
         
-
-
+        t = time.time() - t
+        if t < 2:
+            patient_images = current_patient_images_label[:-1]
+            for image_path in patient_images:
+                size_mb = os.path.getsize(image_path) / (1024 ** 2)
+                print(f'\t\timage: {os.path.basename(image_path)}')
+                print(f'\t\t\tsize: {size_mb:.3f} MB')
+        print(f'\t*end get: {index}, took {t:.3f}s')
+            
+        return image_dict
