@@ -1,8 +1,10 @@
+import gzip
 import os
 import sys
 import time  # possibly don't need
 import numpy as np
-
+import pickle
+import hashlib
 import torch
 from torch.autograd import Variable
 from torch.utils.data import Dataset
@@ -18,6 +20,9 @@ DIMESIONS = (STANDARD_DIM1, STANDARD_DIM2, STANDARD_DIM3)
 
 # Maximum number of images per patient
 MAX_NUM_IMAGES = 4
+
+CACHE_PATH = 'cache'
+os.makedirs(CACHE_PATH, exist_ok=True)
 
 
 class MRIData(Dataset):
@@ -58,14 +63,23 @@ class MRIData(Dataset):
         t = time.time()
 
         # Get current_patient, where [0] is their ID and [1] is their list of images
-        current_patient = self.data_array[index]
+        current_patient_images_label = self.data_array[index]
         # List to store the individual image tensors
-        images_list = []
         # The last element in the current patient's array is the classification
-        patient_label = current_patient[-1]
         # print(patient_label)
         # For each image path, process the .nii image using nibabel
-        for image_path in current_patient[:-1]:
+        image_dict = self.cache0(current_patient_images_label)
+
+        t = time.time() - t
+        print(f'*** end __getitem__: {index}, took {t:.2f}s')
+
+        return image_dict
+
+    def cache0(self, current_patient_images_label: list):
+        images_list = []
+        patient_images = current_patient_images_label[:-1]
+        patient_label = current_patient_images_label[-1]
+        for image_path in patient_images:
             # print(image_path) #FIXME: delete this
             file_name = os.path.join(self.root_dir, image_path)
             # file_name = r'G:\university\arshad\payan_name\open_source_projects\Alzheimers-DL-Network\data_sample\Data\MCI_to_AD\022_S_1394\MIDAS_Whole_Brain_Mask\2007-05-29_14_24_28.0\S34317\ADNI_022_S_1394_MR_MIDAS_Whole_Brain_Mask_Br_20120814182221239_S34317_I323573.nii'
@@ -111,11 +125,25 @@ class MRIData(Dataset):
             'label': patient_label,
             'num_images': num_images,
         }
-        
-        t = time.time() - t
-        print(f'*** end __getitem__: {index}, tool {t:.2f}')
 
         return image_dict
 
-        def cache(self, file_path: str):
-            pass
+    def get(self, current_patient_images_label: list):
+        hash_str = hashlib.sha256(
+            pickle.dumps(current_patient_images_label)
+        ).hexdigest()
+        cache_file_path = os.path.join(CACHE_PATH, hash_str)
+        cache_health_file_path = os.path.join(CACHE_PATH, f'{hash_str}.healthy')
+        if os.path.exists(cache_file_path) and os.path.exists(cache_health_file_path):
+            with gzip.open(cache_file_path, "rb") as file:
+                image_dict = pickle.load(file)
+        else:
+            image_dict = self.cache0(current_patient_images_label)
+            with gzip.open(cache_file_path, "wb", compresslevel=3) as file:
+                pickle.dump(image_dict, file)
+            open(cache_health_file_path, 'w').close()
+        
+        return image_dict
+        
+
+
