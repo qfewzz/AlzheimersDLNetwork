@@ -96,7 +96,7 @@ except Exception as e:
 
 random.shuffle(MRI_images_list)
 
-train_size = int(0.7 * len(MRI_images_list))
+train_size = int(0.8 * len(MRI_images_list))
 
 # Split list
 training_list = MRI_images_list[:train_size]

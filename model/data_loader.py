@@ -129,6 +129,7 @@ class MRIData(Dataset):
         hash_str = hashlib.sha256(
             pickle.dumps(current_patient_images_label)
         ).hexdigest()
+        
         cache_file_path = os.path.join(CACHE_PATH, hash_str)
         cache_health_file_path = os.path.join(CACHE_PATH, f'{hash_str}.healthy')
         if os.path.exists(cache_file_path) and os.path.exists(cache_health_file_path):
@@ -138,7 +139,7 @@ class MRIData(Dataset):
         else:
             using_cache = False
             image_dict = self.cache0(current_patient_images_label)
-            with gzip.open(cache_file_path, "wb", compresslevel=3) as file:
+            with gzip.open(cache_file_path, "wb", compresslevel=1) as file:
                 image_dict_bytes = pickle.dumps(image_dict)
                 size_before_mb = len(image_dict_bytes) / (1024**2)
                 file.write(image_dict_bytes)
