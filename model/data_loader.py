@@ -144,11 +144,12 @@ class MRIData(Dataset):
         
         
         time0 = time.time() - time0
-        print(f'\t\t*got: {index}, using_cache: {using_cache}, took {time0:.3f}s')
-        if not using_cache and time0 < 2:
-            patient_images = current_patient_images_label[:-1]
-            for image_path in patient_images:
-                size_mb = os.path.getsize(image_path) / (1024 ** 2)
-                print(f'\t\t image:\n\t\t  {os.path.basename(image_path)}')
-                print(f'\t\t size: {size_mb:.3f} MB')
+        if not using_cache:
+            print(f'\t\t*got: {index}, using_cache: {using_cache}, took {time0:.3f}s')
+            if not using_cache and time0 < 2:
+                patient_images = current_patient_images_label[:-1]
+                for image_path in patient_images:
+                    size_mb = os.path.getsize(image_path) / (1024 ** 2)
+                    print(f'\t\t image:\n\t\t  {os.path.basename(image_path)}')
+                    print(f'\t\t size: {size_mb:.3f} MB')
         return image_dict
