@@ -179,7 +179,7 @@ def train(model, training_data, optimizer, criterion):
                 model_predictions = out
 
                 loss = criterion(model_predictions, patient_endstate)
-                batch_loss += loss.item()
+                batch_loss += loss
 
                 # Calculate accuracy
                 predicted_classes = torch.argmax(model_predictions, dim=1)
