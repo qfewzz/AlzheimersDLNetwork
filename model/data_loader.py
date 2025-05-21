@@ -124,7 +124,7 @@ class MRIData(Dataset):
     def get(self, current_patient_images_label: list, index: int):
         # print(f'\t*start get: {index}')
         time0 = time.time()
-        using_cache=False
+        using_cache = False
 
         hash_str = hashlib.sha256(
             pickle.dumps(current_patient_images_label)
@@ -136,20 +136,19 @@ class MRIData(Dataset):
             with gzip.open(cache_file_path, "rb") as file:
                 image_dict = pickle.load(file)
         else:
-            using_cache = True = False
+            using_cache = False
             image_dict = self.cache0(current_patient_images_label)
             with gzip.open(cache_file_path, "wb", compresslevel=3) as file:
                 pickle.dump(image_dict, file)
             open(cache_health_file_path, 'w').close()
-        
-        
+
         time0 = time.time() - time0
         if not using_cache:
             print(f'\t\t*got: {index}, using_cache: {using_cache}, took {time0:.3f}s')
             if not using_cache and time0 < 2:
                 patient_images = current_patient_images_label[:-1]
                 for image_path in patient_images:
-                    size_mb = os.path.getsize(image_path) / (1024 ** 2)
+                    size_mb = os.path.getsize(image_path) / (1024**2)
                     print(f'\t\t image:\n\t\t  {os.path.basename(image_path)}')
                     print(f'\t\t size: {size_mb:.3f} MB')
         return image_dict
