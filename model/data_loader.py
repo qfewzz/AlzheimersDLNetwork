@@ -68,7 +68,7 @@ class MRIData(Dataset):
         # The last element in the current patient's array is the classification
         # print(patient_label)
         # For each image path, process the .nii image using nibabel
-        image_dict = self.cache0(current_patient_images_label)
+        image_dict = self.get(current_patient_images_label)
 
         t = time.time() - t
         print(f'*** end __getitem__: {index}, took {t:.2f}s')
