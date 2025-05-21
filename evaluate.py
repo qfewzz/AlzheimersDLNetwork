@@ -193,7 +193,7 @@ def train(model, training_data, optimizer, criterion):
         batch_loss.backward()
         optimizer.step()
         epoch_loss += batch_loss
-        print("\tbatch_loss: ", batch_loss)
+        # print("\tbatch_loss: ", batch_loss)
     # print("\tepoch_loss: ", epoch_loss)
 
     # print("\tepoch_loss: ", epoch_loss)
@@ -274,7 +274,7 @@ def test(model, test_data, criterion):
 
             epoch_loss += batch_loss
             utils.clear()
-            print("\tbatch_loss: ", batch_loss)
+            # print("\tbatch_loss: ", batch_loss)
     # print("\tepoch_loss: ", epoch_loss)
 
     if epoch_length == 0:
@@ -290,7 +290,7 @@ best_test_accuracy = float('inf')
 # This evaluation workflow below was adapted from Ben Trevett's design
 # on https://github.com/bentrevett/pytorch-seq2seq/blob/master/1%20-%20Sequence%20to%20Sequence%20Learning%20with%20Neural%20Networks.ipynb
 for epoch in range(training_epochs):
-    print(f'* starting epoch {epoch+1}/{training_epochs}')
+    print(f'starting epoch {epoch+1}/{training_epochs}')
     start_time = time.time()
     print('start training...')
 
@@ -308,12 +308,12 @@ for epoch in range(training_epochs):
 
     print()
     print(
-        f"Hurrah! Epoch {epoch + 1}/{training_epochs} concludes. | Time: {epoch_mins}m {epoch_secs}s"
+        f"{epoch + 1}/{training_epochs} done | Time: {epoch_mins}m {epoch_secs}s"
     )
     print(
-        f"Train Loss:\t{train_loss:.3f} | Train Perplexity:\t{math.exp(train_loss):7.3f} | Train Accuracy: {train_accuracy:.3f}"
+        f"Train Loss:\t{train_loss:.3f} | Train Accuracy: {train_accuracy:.3f}"
     )
-    print(f"Test Loss:\t{test_loss:.3f} | Test Perplexity:\t{math.exp(test_loss):7.3f} | Test Accuracy: {test_accuracy:.3f}")
+    print(f"Test Loss:\t{test_loss:.3f} | Test Accuracy: {test_accuracy:.3f}")
 
     if test_loss < best_test_accuracy:
         print("that was our best test accuracy yet!")
