@@ -144,7 +144,7 @@ class MRIData(Dataset):
         
         
         time0 = time.time() - time0
-        print(f'\t\t*got: {index}, took {time0:.3f}s')
+        print(f'\t\t*got: {index}, using_cache: {using_cache}, took {time0:.3f}s')
         if not using_cache and time0 < 2:
             patient_images = current_patient_images_label[:-1]
             for image_path in patient_images:
