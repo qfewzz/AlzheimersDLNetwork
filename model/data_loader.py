@@ -13,9 +13,9 @@ import nibabel as nib
 from scipy import ndimage
 
 # Dimensions of neuroimages after resizing
-STANDARD_DIM1 = int(200 * 0.85)
-STANDARD_DIM2 = int(200 * 0.85)
-STANDARD_DIM3 = int(150 * 0.85)
+STANDARD_DIM1 = int(200 * 1)
+STANDARD_DIM2 = int(200 * 1)
+STANDARD_DIM3 = int(150 * 1)
 DIMESIONS = (STANDARD_DIM1, STANDARD_DIM2, STANDARD_DIM3)
 
 # Maximum number of images per patient
@@ -139,12 +139,18 @@ class MRIData(Dataset):
             using_cache = False
             image_dict = self.cache0(current_patient_images_label)
             with gzip.open(cache_file_path, "wb", compresslevel=3) as file:
-                pickle.dump(image_dict, file)
+                image_dict_bytes = pickle.dumps(image_dict)
+                size_before_mb = len(image_dict_bytes) / (1024**2)
+                file.write(image_dict_bytes)
+
+            size_after_mb = os.path.getsize(cache_file_path)
             open(cache_health_file_path, 'w').close()
 
         time0 = time.time() - time0
         if not using_cache:
-            print(f'\t\t*got: {index}, using_cache: {using_cache}, took {time0:.3f}s')
+            print(
+                f'\t * got: {index}, using_cache: {using_cache}, size from {size_before_mb:.2f} to {size_after_mb:.2f}, took {time0:.3f}s'
+            )
             if not using_cache and time0 < 2:
                 patient_images = current_patient_images_label[:-1]
                 for image_path in patient_images:

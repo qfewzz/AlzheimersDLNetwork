@@ -51,7 +51,7 @@ import argparse
 
 ## Hyperparameters
 
-BATCH_SIZE = 10
+BATCH_SIZE = 8
 # Dimensionality of the data outputted by the LSTM,
 # forwarded to the final dense layer.
 LSTM_output_size = 16
@@ -132,7 +132,7 @@ def train(model, training_data, optimizer, criterion):
     correct_predictions = 0
     total_predictions = 0
     for i, patient_data in enumerate(training_data):
-        print(f'\tbatch {i+1}/{epoch_length}')
+        print(f'\t** batch {i+1}/{epoch_length}')
         # if i % (math.floor(epoch_length / 5) + 1) == 0:
         # print(f"\t\tTraining Progress:{i / len(training_data) * 100}%")
         # Clear gradients
@@ -179,7 +179,7 @@ def train(model, training_data, optimizer, criterion):
                 model_predictions = out
 
                 loss = criterion(model_predictions, patient_endstate)
-                batch_loss += loss
+                batch_loss += loss.item()
 
                 # Calculate accuracy
                 predicted_classes = torch.argmax(model_predictions, dim=1)
@@ -216,7 +216,7 @@ def test(model, test_data, criterion):
     total_predictions = 0
     with torch.no_grad():
         for i, patient_data in enumerate(test_data):
-            print(f'\tbatch {i+1}/{epoch_length}')
+            print(f'\t** batch {i+1}/{epoch_length}')
             # if i % (math.floor(epoch_length / 5) + 1) == 0:
             #     print(f"\t\tTesting Progress:{i / len(test_data) * 100}%")
             # Clear gradients
@@ -290,7 +290,7 @@ best_test_accuracy = float('inf')
 # This evaluation workflow below was adapted from Ben Trevett's design
 # on https://github.com/bentrevett/pytorch-seq2seq/blob/master/1%20-%20Sequence%20to%20Sequence%20Learning%20with%20Neural%20Networks.ipynb
 for epoch in range(training_epochs):
-    print(f'starting epoch {epoch+1}/{training_epochs}')
+    print(f'* starting epoch {epoch+1}/{training_epochs}')
     start_time = time.time()
     print('start training...')
 
@@ -308,7 +308,7 @@ for epoch in range(training_epochs):
 
     print()
     print(
-        f"{epoch + 1}/{training_epochs} done | Time: {epoch_mins}m {epoch_secs}s"
+        f"epoch {epoch + 1}/{training_epochs} done | Time: {epoch_mins}m {epoch_secs}s"
     )
     print(
         f"Train Loss:\t{train_loss:.3f} | Train Accuracy: {train_accuracy:.3f}"
