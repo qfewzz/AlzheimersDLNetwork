@@ -1,7 +1,9 @@
 import gzip
 import os
+import shutil
 import sys
-import time  # possibly don't need
+import time
+import uuid  # possibly don't need
 import numpy as np
 import pickle
 import hashlib
@@ -24,6 +26,8 @@ MAX_NUM_IMAGES = 4
 CACHE_PATH = 'cache'
 os.makedirs(CACHE_PATH, exist_ok=True)
 
+TEMP_PATH = 'temp'
+os.makedirs(TEMP_PATH, exist_ok=True)
 
 class MRIData(Dataset):
     """
@@ -76,10 +80,19 @@ class MRIData(Dataset):
             # print(image_path) #FIXME: delete this
             file_name = os.path.join(self.root_dir, image_path)
             # file_name = r'G:\university\arshad\payan_name\open_source_projects\Alzheimers-DL-Network\data_sample\Data\MCI_to_AD\022_S_1394\MIDAS_Whole_Brain_Mask\2007-05-29_14_24_28.0\S34317\ADNI_022_S_1394_MR_MIDAS_Whole_Brain_Mask_Br_20120814182221239_S34317_I323573.nii'
-            neuroimage = nib.load(file_name)  # Loads proxy image
+            use_temp_file = not file_name.endswith('.nii')
+            if use_temp_file:
+                temp_file_path = os.path.join(TEMP_PATH, uuid.uuid4().hex + '.nii')
+                shutil.copy(file_name, temp_file_path)
+            else:
+                temp_file_path = file_name
+                
+            neuroimage = nib.load(temp_file_path)  # Loads proxy image
             # Extract the N-D array containing the image data from the nibabel image object
             image_data = neuroimage.get_fdata()  # Retrieves array data
             # Resize and interpolate image
+            if use_temp_file:
+                os.remove(temp_file_path)
             image_size = image_data.shape  # Store dimensions of N-D array
             current_dim1 = image_size[0]
             current_dim2 = image_size[1]
