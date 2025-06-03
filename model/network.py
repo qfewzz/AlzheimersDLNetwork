@@ -101,7 +101,7 @@ class Network(nn.Module):
         )  # This assumes one output channel from CNN
 
         lstm_out, self.hidden = self.lstm(lstm_in)  # assuming mini-batch of 1
-        self.hidden = (self.hidden[0].detach(), self.hidden[1].detach())
+        # self.hidden = (self.hidden[0].detach(), self.hidden[1].detach())
         # To feed the final LSTM layer through the last layer, we need to convert the multidimensional output to
         # a single dimensional tensor.
         dense_conversion = self.prediction_converter(lstm_out)
