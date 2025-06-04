@@ -187,13 +187,14 @@ def train(model, training_data, optimizer, criterion):
                 total_predictions += patient_endstate.size(0)
 
             except Exception as e:
-                print("EXCEPTION CAUGHT:", e)
+                print("\nEXCEPTION CAUGHT:", e)
                 traceback.print_exc()
 
         batch_loss.backward()
         optimizer.step()
         epoch_loss += batch_loss
         # print("\tbatch_loss: ", batch_loss)
+    print()
     # print("\tepoch_loss: ", epoch_loss)
 
     # print("\tepoch_loss: ", epoch_loss)
@@ -269,12 +270,13 @@ def test(model, test_data, criterion):
 
                 except Exception as e:
                     epoch_length -= 1
-                    print("EXCEPTION CAUGHT:", e)
+                    print("\nEXCEPTION CAUGHT:", e)
                     traceback.print_exc()
 
             epoch_loss += batch_loss
             utils.clear()
             # print("\tbatch_loss: ", batch_loss)
+        print()
     # print("\tepoch_loss: ", epoch_loss)
 
     if epoch_length == 0:
