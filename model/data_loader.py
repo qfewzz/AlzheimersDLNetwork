@@ -10,11 +10,18 @@ import hashlib
 import torch
 from torch.autograd import Variable
 from torch.utils.data import Dataset
-
 import nibabel as nib
 from scipy import ndimage
-
 from concurrent.futures import ProcessPoolExecutor, Future, wait, as_completed
+
+# Determine the absolute path of the parent directory
+parent_dir = os.path.abspath(os.path.join(os.path.dirname(__file__), '..'))
+# Insert the parent directory at the beginning of sys.path
+sys.path.insert(0, parent_dir)
+
+import utils
+
+
 
 # Dimensions of neuroimages after resizing
 STANDARD_DIM1 = int(200 * 1)
@@ -56,6 +63,7 @@ class MRIData(Dataset):
         """
         self.root_dir = root_dir
         self.data_array = data_array
+        self.print_on = True
 
     def __len__(self):
         """
@@ -172,7 +180,7 @@ class MRIData(Dataset):
         )
         time0 = time.time() - time0
         print(
-            f'\t * got index: {index}, used cache: {cache_count}/{total_count}, took {time0:.3f}s'
+            f'\t * got index: {index}/{len(self.data_array)}, used cache: {cache_count}/{total_count}, took {time0:.3f}s'
         )
 
         # if cache_count == 0:
@@ -189,8 +197,9 @@ class MRIData(Dataset):
         return image_dict
 
     def cache_all_multiprocess(self):
+        self.print_on = False
         print('* start caching all images...')
-        executor = ProcessPoolExecutor(6)
+        executor = ProcessPoolExecutor(5)
         futures: list[Future] = []
         for index in range(len(self.data_array)):
             future = executor.submit(self.__getitem__, index)
@@ -199,5 +208,9 @@ class MRIData(Dataset):
         print('\ttasks submitted, waiting for them to finish')
         for index, future in enumerate(futures):
             future.result()
-            print(f'\r\t* {index+1}/{len(futures)} done!', end='')
+            # print(f'\r\t* {index+1}/{len(futures)} done!', end='')
+            if index % 20 == 0:
+                utils.clear()
+                
         print(f'\n\tcaching done!')
+        self.print_on = True
