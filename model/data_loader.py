@@ -72,6 +72,7 @@ class MRIData(Dataset):
 
     def function__get_item(self, index):
         current_patient_images_label = self.data_array[index]
+
         def function():
             return MRIData.get(
                 self.root_dir,
@@ -81,7 +82,17 @@ class MRIData(Dataset):
             )
 
         return function
-    
+
+    def function_and_params__get_item(self, index):
+        current_patient_images_label = self.data_array[index]
+        return (
+            MRIData.get,
+            self.root_dir,
+            current_patient_images_label,
+            index,
+            len(self.data_array),
+        )
+
     def __getitem__(self, index):
         """
         Allows indexing of dataset      (required by DataLoader)
@@ -174,7 +185,7 @@ class MRIData(Dataset):
         }
 
         return image_dict, cache_count, total_count
-    
+
     @classmethod
     def get(
         cls,
@@ -206,15 +217,15 @@ class MRIData(Dataset):
         #             print(f'\t\t size: {size_mb:.3f} MB')
 
         return image_dict
-    
+
     def cache_all_multiprocess(self):
         self.print_on = False
         print('* start caching all images...')
         executor = ProcessPoolExecutor(5)
         futures: list[Future] = []
-        
+
         for index in range(len(self.data_array)):
-            future = executor.submit(self.function__get_item(index))
+            future = executor.submit(*self.function_and_params__get_item(index))
             futures.append(future)
 
         print('\ttasks submitted, waiting for them to finish')
