@@ -96,7 +96,7 @@ class Network(nn.Module):
         # Flatten the output layers from the CNN into a 1d tensor
         lstm_in = torch.cat(
             [torch.flatten(image[0])[..., None] for image in feature_space], axis=0
-        ).view(
+        ).view(  # type: ignore
             feature_space.shape[0], 1, -1
         )  # This assumes one output channel from CNN
 

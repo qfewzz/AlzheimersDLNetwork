@@ -15,18 +15,15 @@ from torch.utils.data import DataLoader
 
 # from torch.utils.data.sampler import SubsetRandomSampler
 
-# To unpack ADNI data
-import pickle
 import random
-
-# Import network
 import sys
 
-sys.path.insert(1, './model')
+# sys.path.insert(1, './model')
 from . import utils
 # import model.network
 from .model.network import Network
 from .model.data_loader import MRIData, DIMESIONS
+from .model.data_loader_utils import cache_all_multiprocess
 # import argparse
 
 
@@ -52,7 +49,7 @@ from .model.data_loader import MRIData, DIMESIONS
 ## Hyperparameters
 
 ## Training Function
-def train(model, training_data, optimizer, criterion):
+def train(model, training_data, optimizer, criterion, device, data_shape):
     """takes (model, training data, optimizer, loss function)"""
     # Activate training mode
     model.train()
@@ -137,7 +134,7 @@ def train(model, training_data, optimizer, criterion):
 
 
 ## Testing Function
-def test(model, test_data, criterion):
+def test(model, test_data, criterion, device, data_shape):
     """takes (model, test_data, loss function) and returns the epoch loss."""
     model.eval()
     epoch_loss = 0
@@ -255,7 +252,7 @@ def main():
             raise Exception()
     except Exception as e:
         MRI_images_list = json.loads(
-            open(f'data_sample\data_sample_image_paths.txt', 'r', encoding='utf-8').read()
+            open(f'data_sample\\data_sample_image_paths.txt', 'r', encoding='utf-8').read()
         )
         pass
 
@@ -271,8 +268,6 @@ def main():
     train_dataset = MRIData(DATA_ROOT_DIR, training_list)
     test_dataset = MRIData(DATA_ROOT_DIR, test_list)
 
-    train_dataset.cache_all_multiprocess()
-    train_dataset.cache_all_multiprocess()
 
     train_loader = DataLoader(train_dataset, batch_size=BATCH_SIZE, shuffle=True)
     test_loader = DataLoader(test_dataset, batch_size=BATCH_SIZE, shuffle=True)
@@ -280,6 +275,8 @@ def main():
     training_data = train_loader
     test_data = test_loader
 
+    cache_all_multiprocess(train_dataset.root_dir, train_dataset.data_array)
+    cache_all_multiprocess(test_dataset.root_dir, test_dataset.data_array)
 
     ## Define Model
     model = Network(input_size, data_shape, output_dimension).to(device)
@@ -300,11 +297,11 @@ def main():
         start_time = time.time()
         print('start training...')
 
-        train_loss, train_accuracy = train(model, training_data, optimizer, loss_function)
+        train_loss, train_accuracy = train(model, training_data, optimizer, loss_function, device, data_shape)
         utils.clear()
 
         print('start testing...')
-        test_loss, test_accuracy = test(model, test_data, loss_function)
+        test_loss, test_accuracy = test(model, test_data, loss_function, device, data_shape)
         utils.clear()
 
         end_time = time.time()
