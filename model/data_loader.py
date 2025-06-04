@@ -22,7 +22,6 @@ sys.path.insert(0, parent_dir)
 import utils
 
 
-
 # Dimensions of neuroimages after resizing
 STANDARD_DIM1 = int(200 * 1)
 STANDARD_DIM2 = int(200 * 1)
@@ -71,22 +70,27 @@ class MRIData(Dataset):
         """
         return len(self.data_array)  # the number of patients in the dataset
 
+    def function__get_item(self, index):
+        current_patient_images_label = self.data_array[index]
+        def function():
+            return MRIData.get(
+                self.root_dir,
+                current_patient_images_label,
+                index,
+                len(self.data_array),
+            )
+
+        return function
+    
     def __getitem__(self, index):
         """
         Allows indexing of dataset      (required by DataLoader)
         Returns a tensor that contains the patient's MRI neuroimages and their diagnoses (AD or MCI)
         """
-        # Get current_patient, where [0] is their ID and [1] is their list of images
-        current_patient_images_label = self.data_array[index]
-        # List to store the individual image tensors
-        # The last element in the current patient's array is the classification
-        # print(patient_label)
-        # For each image path, process the .nii image using nibabel
-        image_dict = self.get(current_patient_images_label, index)
+        return self.function__get_item(index)
 
-        return image_dict
-
-    def calculate(self, current_patient_images_label: list):
+    @classmethod
+    def calculate(cls, root_dir, current_patient_images_label: list):
         images_list = []
         patient_images = current_patient_images_label[:-1]
         patient_label = current_patient_images_label[-1]
@@ -95,8 +99,7 @@ class MRIData(Dataset):
         total_count = len(patient_images)
 
         for image_path in patient_images:
-            # print(image_path) #FIXME: delete this
-            file_path: str = os.path.join(self.root_dir, image_path)
+            file_path: str = os.path.join(root_dir, image_path)
             hash_str = hashlib.sha256(file_path.encode('utf-8')).hexdigest()
             cache_path = os.path.join(CACHE_SINGLE_PATH, hash_str)
             cache_path_healthy = cache_path + '.healthy'
@@ -171,16 +174,24 @@ class MRIData(Dataset):
         }
 
         return image_dict, cache_count, total_count
-
-    def get(self, current_patient_images_label: list, index: int):
+    
+    @classmethod
+    def get(
+        cls,
+        root_dir,
+        current_patient_images_label: list,
+        index: int,
+        all_items_count: int,
+    ):
         # print(f'\t*start get: {index}')
         time0 = time.time()
-        image_dict, cache_count, total_count = self.calculate(
-            current_patient_images_label
+        image_dict, cache_count, total_count = cls.calculate(
+            root_dir,
+            current_patient_images_label,
         )
         time0 = time.time() - time0
         print(
-            f'\t * got index: {index}/{len(self.data_array)}, used cache: {cache_count}/{total_count}, took {time0:.3f}s'
+            f'\t * got index: {index}/{all_items_count}, used cache: {cache_count}/{total_count}, took {time0:.3f}s'
         )
 
         # if cache_count == 0:
@@ -196,17 +207,14 @@ class MRIData(Dataset):
 
         return image_dict
     
-    def cache_item(self, index):
-        self.__getitem__(index)
-        utils.clear()
-
     def cache_all_multiprocess(self):
         self.print_on = False
         print('* start caching all images...')
         executor = ProcessPoolExecutor(5)
         futures: list[Future] = []
+        
         for index in range(len(self.data_array)):
-            future = executor.submit(self.cache_item, index)
+            future = executor.submit(self.function__get_item(index))
             futures.append(future)
 
         print('\ttasks submitted, waiting for them to finish')
@@ -215,6 +223,8 @@ class MRIData(Dataset):
             # print(f'\r\t* {index+1}/{len(futures)} done!', end='')
             if index % 20 == 0:
                 utils.clear()
-                
+
         print(f'\n\tcaching done!')
         self.print_on = True
+
+        executor.shutdown(True)
