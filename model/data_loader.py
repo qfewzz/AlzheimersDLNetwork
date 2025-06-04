@@ -215,7 +215,7 @@ class MRIData(Dataset):
     def cache_all_multiprocess(self):
         self.print_on = False
         print('* start caching all images...')
-        executor = ProcessPoolExecutor(5)
+        executor = ProcessPoolExecutor(6)
         futures: list[Future] = []
 
         for index in range(len(self.data_array)):
