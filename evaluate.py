@@ -132,7 +132,7 @@ def train(model, training_data, optimizer, criterion):
     correct_predictions = 0
     total_predictions = 0
     for i, patient_data in enumerate(training_data):
-        print(f'\t** batch {i+1}/{epoch_length}')
+        print(f'\r\t** batch {i+1}/{epoch_length}', end='')
         # if i % (math.floor(epoch_length / 5) + 1) == 0:
         # print(f"\t\tTraining Progress:{i / len(training_data) * 100}%")
         # Clear gradients
@@ -216,7 +216,7 @@ def test(model, test_data, criterion):
     total_predictions = 0
     with torch.no_grad():
         for i, patient_data in enumerate(test_data):
-            print(f'\t** batch {i+1}/{epoch_length}')
+            print(f'\r\t** batch {i+1}/{epoch_length}', end='')
             # if i % (math.floor(epoch_length / 5) + 1) == 0:
             #     print(f"\t\tTesting Progress:{i / len(test_data) * 100}%")
             # Clear gradients
