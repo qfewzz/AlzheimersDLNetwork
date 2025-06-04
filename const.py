@@ -1,0 +1,41 @@
+from dataclasses import dataclass
+import os
+from threading import Lock
+
+class SingletonMeta(type):
+    _instances = {}
+    _lock: Lock = Lock()  # this ensures thread-safe instantiation
+
+    def __call__(cls, *args, **kwargs):
+        with cls._lock:
+            if cls not in cls._instances:
+                instance = super().__call__(*args, **kwargs)
+                cls._instances[cls] = instance
+        return cls._instances[cls]
+    
+@dataclass
+class Config(metaclass=SingletonMeta):
+    MAX_NUM_IMAGES: int = 6
+    CACHE_PATH: str = 'cache'
+    CACHE_SINGLE_PATH_READ: str = 'cache/single'
+    CACHE_SINGLE_PATH_WRITE: str = 'cache/single'
+    TEMP_PATH: str = 'temp'
+
+    STANDARD_DIM1: int = int(200 * 1)
+    STANDARD_DIM2: int = int(200 * 1)
+    STANDARD_DIM3: int = int(200 * 1)
+    DIMESIONS: tuple[int, int, int] = (STANDARD_DIM1, STANDARD_DIM2, STANDARD_DIM3)
+
+    def refresh(self):
+        os.makedirs(self.CACHE_PATH, exist_ok=True)
+        os.makedirs(self.CACHE_SINGLE_PATH_WRITE, exist_ok=True)
+        os.makedirs(self.TEMP_PATH, exist_ok=True)
+
+# import jsonpickle
+# import dill
+# Config.CACHE_PATH = 'aaaaaaaa'
+# a = dill.dumps(Config)
+# Config.CACHE_PATH = 'bbbbbbbb'
+# b = dill.loads(a)
+
+# print(b.CACHE_PATH)

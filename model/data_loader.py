@@ -1,5 +1,11 @@
+import os
+import sys
 from torch.utils.data import Dataset
-from .const import *
+
+parent_dir = os.path.abspath(os.path.join(os.path.dirname(__file__), '..'))
+sys.path.insert(0, parent_dir)
+import const
+
 from . import data_loader_utils
 
 class MRIData(Dataset):

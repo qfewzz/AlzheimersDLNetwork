@@ -1,7 +1,13 @@
 """Unified home for training and evaluation. Imports model and dataloader."""
 
-import gc
 import os
+import sys
+
+# parent_dir = os.path.abspath(os.path.join(os.path.dirname(__file__), '..'))
+# sys.path.insert(0, parent_dir)
+from . import const
+
+import gc
 import json
 import time
 import math
@@ -16,14 +22,17 @@ from torch.utils.data import DataLoader
 # from torch.utils.data.sampler import SubsetRandomSampler
 
 import random
-import sys
+
 
 # sys.path.insert(1, './model')
 from . import utils
 # import model.network
 from .model.network import Network
-from .model.data_loader import MRIData, DIMESIONS
+from .model.data_loader import MRIData
 from .model.data_loader_utils import cache_all_multiprocess
+
+
+
 # import argparse
 
 
@@ -47,6 +56,7 @@ from .model.data_loader_utils import cache_all_multiprocess
 # random.seed(1)
 
 ## Hyperparameters
+
 
 ## Training Function
 def train(model, training_data, optimizer, criterion, device, data_shape):
@@ -110,7 +120,9 @@ def train(model, training_data, optimizer, criterion, device, data_shape):
 
                 # Calculate accuracy
                 predicted_classes = torch.argmax(model_predictions, dim=1)
-                correct_predictions += (predicted_classes == patient_endstate).sum().item()
+                correct_predictions += (
+                    (predicted_classes == patient_endstate).sum().item()
+                )
                 total_predictions += patient_endstate.size(0)
 
             except Exception as e:
@@ -128,7 +140,7 @@ def train(model, training_data, optimizer, criterion, device, data_shape):
 
     if epoch_length == 0:
         epoch_length = 0.000001
-    
+
     accuracy = correct_predictions / total_predictions if total_predictions > 0 else 0.0
     return epoch_loss / epoch_length, accuracy
 
@@ -192,7 +204,9 @@ def test(model, test_data, criterion, device, data_shape):
 
                     # Calculate accuracy
                     predicted_classes = torch.argmax(model_predictions, dim=1)
-                    correct_predictions += (predicted_classes == patient_endstate).sum().item()
+                    correct_predictions += (
+                        (predicted_classes == patient_endstate).sum().item()
+                    )
                     total_predictions += patient_endstate.size(0)
 
                 except Exception as e:
@@ -208,11 +222,16 @@ def test(model, test_data, criterion, device, data_shape):
 
     if epoch_length == 0:
         epoch_length = 0.000001
-    
+
     accuracy = correct_predictions / total_predictions if total_predictions > 0 else 0.0
     return epoch_loss / epoch_length, accuracy
 
-def main():
+
+def main(cache_dir_single_read=None):
+    if cache_dir_single_read:
+        const.Config().CACHE_SINGLE_PATH_READ = cache_dir_single_read
+        const.Config().refresh()
+        
     BATCH_SIZE = 4
     # Dimensionality of the data outputted by the LSTM,
     # forwarded to the final dense layer.
@@ -226,9 +245,8 @@ def main():
     learning_rate = 0.1
     training_epochs = 30
     # The size of images passed, as a tuple
-    data_shape = DIMESIONS
+    data_shape = const.Config().DIMESIONS
     # Other hyperparameters unlisted: the depth of the model, the kernel size, the padding, the channel restriction.
-
 
     ## Import Data
     # MRI_images_list = pickle.load(open("./Data/Combined_MRI_List.pkl", "rb"))
@@ -252,7 +270,9 @@ def main():
             raise Exception()
     except Exception as e:
         MRI_images_list = json.loads(
-            open(f'data_sample\\data_sample_image_paths.txt', 'r', encoding='utf-8').read()
+            open(
+                f'data_sample\\data_sample_image_paths.txt', 'r', encoding='utf-8'
+            ).read()
         )
         pass
 
@@ -267,7 +287,6 @@ def main():
     DATA_ROOT_DIR = './'
     train_dataset = MRIData(DATA_ROOT_DIR, training_list)
     test_dataset = MRIData(DATA_ROOT_DIR, test_list)
-
 
     train_loader = DataLoader(train_dataset, batch_size=BATCH_SIZE, shuffle=True)
     test_loader = DataLoader(test_dataset, batch_size=BATCH_SIZE, shuffle=True)
@@ -285,8 +304,6 @@ def main():
 
     optimizer = optim.SGD(model.parameters(), lr=learning_rate)
 
-
-
     # Perform training and measure test accuracy. Save best performing model.
     best_test_accuracy = float('inf')
 
@@ -297,11 +314,15 @@ def main():
         start_time = time.time()
         print('start training...')
 
-        train_loss, train_accuracy = train(model, training_data, optimizer, loss_function, device, data_shape)
+        train_loss, train_accuracy = train(
+            model, training_data, optimizer, loss_function, device, data_shape
+        )
         utils.clear()
 
         print('start testing...')
-        test_loss, test_accuracy = test(model, test_data, loss_function, device, data_shape)
+        test_loss, test_accuracy = test(
+            model, test_data, loss_function, device, data_shape
+        )
         utils.clear()
 
         end_time = time.time()
@@ -313,9 +334,7 @@ def main():
         print(
             f"epoch {epoch + 1}/{training_epochs} done | Time: {epoch_mins}m {epoch_secs}s"
         )
-        print(
-            f"Train Loss:\t{train_loss:.3f} | Train Accuracy: {train_accuracy:.3f}"
-        )
+        print(f"Train Loss:\t{train_loss:.3f} | Train Accuracy: {train_accuracy:.3f}")
         print(f"Test Loss:\t{test_loss:.3f} | Test Accuracy: {test_accuracy:.3f}")
 
         if test_loss < best_test_accuracy:
