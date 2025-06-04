@@ -106,6 +106,9 @@ DATA_ROOT_DIR = './'
 train_dataset = MRIData(DATA_ROOT_DIR, training_list)
 test_dataset = MRIData(DATA_ROOT_DIR, test_list)
 
+train_dataset.cache_all_multiprocess()
+test_dataset.cache_all_multiprocess()
+
 train_loader = DataLoader(train_dataset, batch_size=BATCH_SIZE, shuffle=True)
 test_loader = DataLoader(test_dataset, batch_size=BATCH_SIZE, shuffle=True)
 
