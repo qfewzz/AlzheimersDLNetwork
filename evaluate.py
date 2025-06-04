@@ -8,7 +8,6 @@ import math
 import traceback
 import torch
 import torch.nn as nn
-import utils
 
 # import torch.nn.functional as F
 import torch.optim as optim
@@ -24,10 +23,11 @@ import random
 import sys
 
 sys.path.insert(1, './model')
-import model.network
-from model.network import Network
-from model.data_loader import MRIData, DIMESIONS
-import argparse
+from . import utils
+# import model.network
+from .model.network import Network
+from .model.data_loader import MRIData, DIMESIONS
+# import argparse
 
 
 # parser = argparse.ArgumentParser(description='Train and validate network.')
@@ -50,79 +50,6 @@ import argparse
 # random.seed(1)
 
 ## Hyperparameters
-
-BATCH_SIZE = 4
-# Dimensionality of the data outputted by the LSTM,
-# forwarded to the final dense layer.
-LSTM_output_size = 16
-input_size = 1  # Size of the processed MRI scans fed into the CNN.
-
-output_dimension = 2  # the number of predictions the model will make
-# 2 used for binary prediction for each image.
-# update the splicing used in train()
-
-learning_rate = 0.1
-training_epochs = 30
-# The size of images passed, as a tuple
-data_shape = DIMESIONS
-# Other hyperparameters unlisted: the depth of the model, the kernel size, the padding, the channel restriction.
-
-
-## Import Data
-# MRI_images_list = pickle.load(open("./Data/Combined_MRI_List.pkl", "rb"))
-
-# MRI_images_list = MRI_images_list[:5]
-# MRI_images_list = [
-#     [*data[: random.randint(2, min(len(data) - 1, 4))], data[-1]]
-#     for data in MRI_images_list
-# ]
-
-device = sys.argv[-2]
-dataset_json_path = sys.argv[-1]
-try:
-    if dataset_json_path and os.path.isfile(dataset_json_path):
-        MRI_images_list = json.loads(
-            open(dataset_json_path, 'r', encoding='utf-8').read()
-        )
-        if not MRI_images_list:
-            raise Exception()
-    else:
-        raise Exception()
-except Exception as e:
-    MRI_images_list = json.loads(
-        open(f'data_sample\data_sample_image_paths.txt', 'r', encoding='utf-8').read()
-    )
-    pass
-
-random.shuffle(MRI_images_list)
-
-train_size = int(0.8 * len(MRI_images_list))
-
-# Split list
-training_list = MRI_images_list[:train_size]
-test_list = MRI_images_list[train_size:]
-
-DATA_ROOT_DIR = './'
-train_dataset = MRIData(DATA_ROOT_DIR, training_list)
-test_dataset = MRIData(DATA_ROOT_DIR, test_list)
-
-train_dataset.cache_all_multiprocess()
-train_dataset.cache_all_multiprocess()
-
-train_loader = DataLoader(train_dataset, batch_size=BATCH_SIZE, shuffle=True)
-test_loader = DataLoader(test_dataset, batch_size=BATCH_SIZE, shuffle=True)
-
-training_data = train_loader
-test_data = test_loader
-
-
-## Define Model
-model = Network(input_size, data_shape, output_dimension).to(device)
-
-loss_function = nn.CrossEntropyLoss()
-
-optimizer = optim.SGD(model.parameters(), lr=learning_rate)
-
 
 ## Training Function
 def train(model, training_data, optimizer, criterion):
@@ -288,42 +215,116 @@ def test(model, test_data, criterion):
     accuracy = correct_predictions / total_predictions if total_predictions > 0 else 0.0
     return epoch_loss / epoch_length, accuracy
 
+def main():
+    BATCH_SIZE = 4
+    # Dimensionality of the data outputted by the LSTM,
+    # forwarded to the final dense layer.
+    LSTM_output_size = 16
+    input_size = 1  # Size of the processed MRI scans fed into the CNN.
 
-# Perform training and measure test accuracy. Save best performing model.
-best_test_accuracy = float('inf')
+    output_dimension = 2  # the number of predictions the model will make
+    # 2 used for binary prediction for each image.
+    # update the splicing used in train()
 
-# This evaluation workflow below was adapted from Ben Trevett's design
-# on https://github.com/bentrevett/pytorch-seq2seq/blob/master/1%20-%20Sequence%20to%20Sequence%20Learning%20with%20Neural%20Networks.ipynb
-for epoch in range(training_epochs):
-    print(f'* starting epoch {epoch+1}/{training_epochs}')
-    start_time = time.time()
-    print('start training...')
+    learning_rate = 0.1
+    training_epochs = 30
+    # The size of images passed, as a tuple
+    data_shape = DIMESIONS
+    # Other hyperparameters unlisted: the depth of the model, the kernel size, the padding, the channel restriction.
 
-    train_loss, train_accuracy = train(model, training_data, optimizer, loss_function)
-    utils.clear()
 
-    print('start testing...')
-    test_loss, test_accuracy = test(model, test_data, loss_function)
-    utils.clear()
+    ## Import Data
+    # MRI_images_list = pickle.load(open("./Data/Combined_MRI_List.pkl", "rb"))
 
-    end_time = time.time()
+    # MRI_images_list = MRI_images_list[:5]
+    # MRI_images_list = [
+    #     [*data[: random.randint(2, min(len(data) - 1, 4))], data[-1]]
+    #     for data in MRI_images_list
+    # ]
 
-    epoch_mins = math.floor((end_time - start_time) / 60)
-    epoch_secs = math.floor((end_time - start_time) % 60)
+    device = sys.argv[-2]
+    dataset_json_path = sys.argv[-1]
+    try:
+        if dataset_json_path and os.path.isfile(dataset_json_path):
+            MRI_images_list = json.loads(
+                open(dataset_json_path, 'r', encoding='utf-8').read()
+            )
+            if not MRI_images_list:
+                raise Exception()
+        else:
+            raise Exception()
+    except Exception as e:
+        MRI_images_list = json.loads(
+            open(f'data_sample\data_sample_image_paths.txt', 'r', encoding='utf-8').read()
+        )
+        pass
 
-    print()
-    print(
-        f"epoch {epoch + 1}/{training_epochs} done | Time: {epoch_mins}m {epoch_secs}s"
-    )
-    print(
-        f"Train Loss:\t{train_loss:.3f} | Train Accuracy: {train_accuracy:.3f}"
-    )
-    print(f"Test Loss:\t{test_loss:.3f} | Test Accuracy: {test_accuracy:.3f}")
+    random.shuffle(MRI_images_list)
 
-    if test_loss < best_test_accuracy:
-        print("that was our best test accuracy yet!")
-        best_test_accuracy = test_loss
-        torch.save(model.state_dict(), 'ad-model.pt')
+    train_size = int(0.8 * len(MRI_images_list))
 
-    print('-' * 20)
-    # utils.clear()
+    # Split list
+    training_list = MRI_images_list[:train_size]
+    test_list = MRI_images_list[train_size:]
+
+    DATA_ROOT_DIR = './'
+    train_dataset = MRIData(DATA_ROOT_DIR, training_list)
+    test_dataset = MRIData(DATA_ROOT_DIR, test_list)
+
+    train_dataset.cache_all_multiprocess()
+    train_dataset.cache_all_multiprocess()
+
+    train_loader = DataLoader(train_dataset, batch_size=BATCH_SIZE, shuffle=True)
+    test_loader = DataLoader(test_dataset, batch_size=BATCH_SIZE, shuffle=True)
+
+    training_data = train_loader
+    test_data = test_loader
+
+
+    ## Define Model
+    model = Network(input_size, data_shape, output_dimension).to(device)
+
+    loss_function = nn.CrossEntropyLoss()
+
+    optimizer = optim.SGD(model.parameters(), lr=learning_rate)
+
+
+
+    # Perform training and measure test accuracy. Save best performing model.
+    best_test_accuracy = float('inf')
+
+    # This evaluation workflow below was adapted from Ben Trevett's design
+    # on https://github.com/bentrevett/pytorch-seq2seq/blob/master/1%20-%20Sequence%20to%20Sequence%20Learning%20with%20Neural%20Networks.ipynb
+    for epoch in range(training_epochs):
+        print(f'* starting epoch {epoch+1}/{training_epochs}')
+        start_time = time.time()
+        print('start training...')
+
+        train_loss, train_accuracy = train(model, training_data, optimizer, loss_function)
+        utils.clear()
+
+        print('start testing...')
+        test_loss, test_accuracy = test(model, test_data, loss_function)
+        utils.clear()
+
+        end_time = time.time()
+
+        epoch_mins = math.floor((end_time - start_time) / 60)
+        epoch_secs = math.floor((end_time - start_time) % 60)
+
+        print()
+        print(
+            f"epoch {epoch + 1}/{training_epochs} done | Time: {epoch_mins}m {epoch_secs}s"
+        )
+        print(
+            f"Train Loss:\t{train_loss:.3f} | Train Accuracy: {train_accuracy:.3f}"
+        )
+        print(f"Test Loss:\t{test_loss:.3f} | Test Accuracy: {test_accuracy:.3f}")
+
+        if test_loss < best_test_accuracy:
+            print("that was our best test accuracy yet!")
+            best_test_accuracy = test_loss
+            torch.save(model.state_dict(), 'ad-model.pt')
+
+        print('-' * 20)
+        # utils.clear()
