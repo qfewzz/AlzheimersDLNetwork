@@ -195,6 +195,10 @@ class MRIData(Dataset):
         #             print(f'\t\t size: {size_mb:.3f} MB')
 
         return image_dict
+    
+    def cache_item(self, index):
+        self.__getitem__(index)
+        utils.clear()
 
     def cache_all_multiprocess(self):
         self.print_on = False
@@ -202,7 +206,7 @@ class MRIData(Dataset):
         executor = ProcessPoolExecutor(5)
         futures: list[Future] = []
         for index in range(len(self.data_array)):
-            future = executor.submit(self.__getitem__, index)
+            future = executor.submit(self.cache_item, index)
             futures.append(future)
 
         print('\ttasks submitted, waiting for them to finish')
