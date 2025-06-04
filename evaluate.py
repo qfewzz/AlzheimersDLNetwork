@@ -293,6 +293,8 @@ def main(cache_dir_single_read=None):
 
     training_data = train_loader
     test_data = test_loader
+    
+    print(f'### config before-before passing: {const.Config()}')
 
     cache_all_multiprocess(train_dataset.root_dir, train_dataset.data_array)
     cache_all_multiprocess(test_dataset.root_dir, test_dataset.data_array)
@@ -344,3 +346,6 @@ def main(cache_dir_single_read=None):
 
         print('-' * 20)
         # utils.clear()
+
+if __name__ == "__main__":
+    main()

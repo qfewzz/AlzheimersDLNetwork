@@ -139,6 +139,8 @@ def get(
         config_obj = const.Config()
     else:
         config_obj: const.Config = pickle.loads(config)
+        
+    print(f'### config after passing: {config_obj}')
 
     # print(f'\t*start get: {index}')
     time0 = time.time()
@@ -179,6 +181,8 @@ def cache_all_multiprocess(root_dir, data_array):
     for index in range(len(data_array)):
         current_patient_images_label = data_array[index]
         # print(const.Config())
+        
+        print(f'### config before passing: {const.Config()}')
 
         get(
             root_dir,
