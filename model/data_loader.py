@@ -17,7 +17,7 @@ from scipy import ndimage
 # Dimensions of neuroimages after resizing
 STANDARD_DIM1 = int(200 * 1)
 STANDARD_DIM2 = int(200 * 1)
-STANDARD_DIM3 = int(150 * 1)
+STANDARD_DIM3 = int(200 * 1)
 DIMESIONS = (STANDARD_DIM1, STANDARD_DIM2, STANDARD_DIM3)
 
 # Maximum number of images per patient
@@ -26,8 +26,12 @@ MAX_NUM_IMAGES = 4
 CACHE_PATH = 'cache'
 os.makedirs(CACHE_PATH, exist_ok=True)
 
+CACHE_SINGLE_PATH = 'cache/single'
+os.makedirs(CACHE_SINGLE_PATH, exist_ok=True)
+
 TEMP_PATH = 'temp'
 os.makedirs(TEMP_PATH, exist_ok=True)
+
 
 class MRIData(Dataset):
     """
@@ -72,42 +76,66 @@ class MRIData(Dataset):
 
         return image_dict
 
-    def cache0(self, current_patient_images_label: list):
+    def calculate(self, current_patient_images_label: list):
         images_list = []
         patient_images = current_patient_images_label[:-1]
         patient_label = current_patient_images_label[-1]
+        
+        cache_count = 0
+        total_count = len(patient_images)
+        
         for image_path in patient_images:
             # print(image_path) #FIXME: delete this
-            file_name = os.path.join(self.root_dir, image_path)
-            # file_name = r'G:\university\arshad\payan_name\open_source_projects\Alzheimers-DL-Network\data_sample\Data\MCI_to_AD\022_S_1394\MIDAS_Whole_Brain_Mask\2007-05-29_14_24_28.0\S34317\ADNI_022_S_1394_MR_MIDAS_Whole_Brain_Mask_Br_20120814182221239_S34317_I323573.nii'
-            use_temp_file = not file_name.endswith('.nii')
-            if use_temp_file:
-                temp_file_path = os.path.join(TEMP_PATH, uuid.uuid4().hex + '.nii')
-                shutil.copy(file_name, temp_file_path)
+            file_path: str = os.path.join(self.root_dir, image_path)
+            hash_str = hashlib.sha256(file_path.encode('utf-8')).hexdigest()
+            cache_path = os.path.join(CACHE_SINGLE_PATH, hash_str)
+            cache_path_healthy = cache_path + '.healthy'
+            
+            if os.path.exists(cache_path):
+                os.remove(cache_path)
+           
+            if os.path.exists(cache_path_healthy):
+                cache_count += 1
+                with gzip.open(cache_path_healthy, "rb") as file:
+                    image_data_tensor = pickle.load(file)
             else:
-                temp_file_path = file_name
+                use_temp_file = not file_path.endswith('.nii')
+                if use_temp_file:
+                    temp_file_path = os.path.join(TEMP_PATH, uuid.uuid4().hex + '.nii')
+                    shutil.copy(file_path, temp_file_path)
+                else:
+                    temp_file_path = file_path
+
+                neuroimage = nib.load(temp_file_path)  # Loads proxy image
+                # Extract the N-D array containing the image data from the nibabel image object
+                image_data = neuroimage.get_fdata()  # Retrieves array data
+                # Resize and interpolate image
+                if use_temp_file:
+                    os.remove(temp_file_path)
+                image_size = image_data.shape  # Store dimensions of N-D array
+                current_dim1 = image_size[0]
+                current_dim2 = image_size[1]
+                current_dim3 = image_size[2]
+                # Calculate scale factor for each direction
+                scale_factor1 = STANDARD_DIM1 / float(current_dim1)
+                scale_factor2 = STANDARD_DIM2 / float(current_dim2)
+                scale_factor3 = STANDARD_DIM3 / float(current_dim3)
+                # Resize image (spline interpolation)
+                image_data = ndimage.zoom(
+                    image_data, (scale_factor1, scale_factor2, scale_factor3)
+                )
+                # print("Resize success") #FIXME: delete this
+                # Convert image data to a tensor
+                image_data_tensor = torch.Tensor(image_data)
                 
-            neuroimage = nib.load(temp_file_path)  # Loads proxy image
-            # Extract the N-D array containing the image data from the nibabel image object
-            image_data = neuroimage.get_fdata()  # Retrieves array data
-            # Resize and interpolate image
-            if use_temp_file:
-                os.remove(temp_file_path)
-            image_size = image_data.shape  # Store dimensions of N-D array
-            current_dim1 = image_size[0]
-            current_dim2 = image_size[1]
-            current_dim3 = image_size[2]
-            # Calculate scale factor for each direction
-            scale_factor1 = STANDARD_DIM1 / float(current_dim1)
-            scale_factor2 = STANDARD_DIM2 / float(current_dim2)
-            scale_factor3 = STANDARD_DIM3 / float(current_dim3)
-            # Resize image (spline interpolation)
-            image_data = ndimage.zoom(
-                image_data, (scale_factor1, scale_factor2, scale_factor3)
-            )
-            # print("Resize success") #FIXME: delete this
-            # Convert image data to a tensor
-            image_data_tensor = torch.Tensor(image_data)
+                with gzip.open(cache_path, "wb", compresslevel=1) as file:
+                    image_dict_bytes = pickle.dumps(image_data_tensor)
+                    size_before_mb = len(image_dict_bytes) / (1024**2)
+                    file.write(image_dict_bytes)
+                
+                os.rename(cache_path, cache_path_healthy)
+                size_after_mb = os.path.getsize(cache_path_healthy) / (1024**2)
+
             images_list.append(image_data_tensor)
 
         # Add padding to make all final tensors the same size
@@ -132,43 +160,24 @@ class MRIData(Dataset):
             'num_images': num_images,
         }
 
-        return image_dict
+        return image_dict, cache_count, total_count
 
     def get(self, current_patient_images_label: list, index: int):
         # print(f'\t*start get: {index}')
         time0 = time.time()
-        using_cache = False
-
-        hash_str = hashlib.sha256(
-            pickle.dumps(current_patient_images_label)
-        ).hexdigest()
-        
-        cache_file_path = os.path.join(CACHE_PATH, hash_str)
-        cache_health_file_path = os.path.join(CACHE_PATH, f'{hash_str}.healthy')
-        if os.path.exists(cache_file_path) and os.path.exists(cache_health_file_path):
-            using_cache = True
-            with gzip.open(cache_file_path, "rb") as file:
-                image_dict = pickle.load(file)
-        else:
-            using_cache = False
-            image_dict = self.cache0(current_patient_images_label)
-            with gzip.open(cache_file_path, "wb", compresslevel=1) as file:
-                image_dict_bytes = pickle.dumps(image_dict)
-                size_before_mb = len(image_dict_bytes) / (1024**2)
-                file.write(image_dict_bytes)
-
-            size_after_mb = os.path.getsize(cache_file_path) / (1024**2)
-            open(cache_health_file_path, 'w').close()
-
+        image_dict, cache_count, total_count = self.calculate(current_patient_images_label)
         time0 = time.time() - time0
-        if not using_cache:
-            print(
-                f'\t * got: {index}, using_cache: {using_cache}, size from {size_before_mb:.2f} to {size_after_mb:.2f}, took {time0:.3f}s'
-            )
-            if not using_cache and time0 < 2:
-                patient_images = current_patient_images_label[:-1]
-                for image_path in patient_images:
-                    size_mb = os.path.getsize(image_path) / (1024**2)
-                    print(f'\t\t image:\n\t\t  {os.path.basename(image_path)}')
-                    print(f'\t\t size: {size_mb:.3f} MB')
+        print(f'\t * got index: {index}, used cache: {cache_count}/{total_count}, took {time0:.3f}s')
+        
+        # if cache_count == 0:
+        #     print(
+        #         f'\t * got: {index}, using_cache: {using_cache}, size from {size_before_mb:.2f} to {size_after_mb:.2f}, took {time0:.3f}s'
+        #     )
+        #     if not using_cache and time0 < 2:
+        #         patient_images = current_patient_images_label[:-1]
+        #         for image_path in patient_images:
+        #             size_mb = os.path.getsize(image_path) / (1024**2)
+        #             print(f'\t\t image:\n\t\t  {os.path.basename(image_path)}')
+        #             print(f'\t\t size: {size_mb:.3f} MB')
+        
         return image_dict
