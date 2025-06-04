@@ -112,7 +112,7 @@ def get(
     current_patient_images_label: list,
     index: int,
     all_items_count: int,
-    do_not_return=False,
+    clear=False,
 ):
     # print(f'\t*start get: {index}')
     time0 = time.time()
@@ -136,7 +136,8 @@ def get(
     #             print(f'\t\t image:\n\t\t  {os.path.basename(image_path)}')
     #             print(f'\t\t size: {size_mb:.3f} MB')
    
-    if do_not_return:
+    if clear:
+        utils.clear()
         return None
     
     return image_dict
