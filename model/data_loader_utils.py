@@ -7,6 +7,7 @@ import shutil
 import sys
 import time
 import traceback
+from typing import TYPE_CHECKING
 import uuid
 import dill
 import nibabel
@@ -14,10 +15,16 @@ import numpy as np
 from scipy import ndimage
 import torch
 
-parent_dir = os.path.abspath(os.path.join(os.path.dirname(__file__), '..'))
-sys.path.insert(0, parent_dir)
-import const
-import utils
+# parent_dir = os.path.abspath(os.path.join(os.path.dirname(__file__), '..'))
+# sys.path.insert(0, parent_dir)
+
+if not TYPE_CHECKING:
+    const = sys.modules['AlzheimersDLNetwork.const']
+    utils = sys.modules['AlzheimersDLNetwork.utils']
+
+if TYPE_CHECKING:
+    import const
+    import utils
 
 
 def calculate(
@@ -50,7 +57,7 @@ def calculate(
 
         if cache_path:
             cache_count += 1
-            with gzip.open(cache_path_write_healthy, "rb") as file:
+            with gzip.open(cache_path, "rb") as file:
                 image_data_tensor = pickle.load(file)
 
         else:
@@ -62,6 +69,8 @@ def calculate(
                 shutil.copy(file_path, temp_file_path)
             else:
                 temp_file_path = file_path
+
+            # temp_file_path = os.path.join('AlzheimersDLNetwork', temp_file_path)
 
             neuroimage = nibabel.load(temp_file_path)  # type: ignore # Loads proxy image
             # Extract the N-D array containing the image data from the nibabel image object
@@ -139,8 +148,8 @@ def get(
         config_obj = const.Config()
     else:
         config_obj: const.Config = pickle.loads(config)
-        
-    print(f'### config after passing: {config_obj}')
+
+    # print(f'### config after passing: {config_obj}')
 
     # print(f'\t*start get: {index}')
     time0 = time.time()
@@ -181,8 +190,8 @@ def cache_all_multiprocess(root_dir, data_array):
     for index in range(len(data_array)):
         current_patient_images_label = data_array[index]
         # print(const.Config())
-        
-        print(f'### config before passing: {const.Config()}')
+
+        # print(f'### config before passing: {const.Config()}')
 
         get(
             root_dir,

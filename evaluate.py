@@ -2,9 +2,7 @@
 
 import os
 import sys
-
-# parent_dir = os.path.abspath(os.path.join(os.path.dirname(__file__), '..'))
-# sys.path.insert(0, parent_dir)
+import multiprocessing
 from . import const
 
 import gc
@@ -227,7 +225,7 @@ def test(model, test_data, criterion, device, data_shape):
     return epoch_loss / epoch_length, accuracy
 
 
-def main(cache_dir_single_read=None):
+def main(dataset_json_path=None, device=None, cache_dir_single_read=None):
     if cache_dir_single_read:
         const.Config().CACHE_SINGLE_PATH_READ = cache_dir_single_read
         const.Config().refresh()
@@ -257,24 +255,14 @@ def main(cache_dir_single_read=None):
     #     for data in MRI_images_list
     # ]
 
-    device = sys.argv[-2]
-    dataset_json_path = sys.argv[-1]
-    try:
-        if dataset_json_path and os.path.isfile(dataset_json_path):
-            MRI_images_list = json.loads(
-                open(dataset_json_path, 'r', encoding='utf-8').read()
-            )
-            if not MRI_images_list:
-                raise Exception()
-        else:
-            raise Exception()
-    except Exception as e:
-        MRI_images_list = json.loads(
-            open(
-                f'data_sample\\data_sample_image_paths.txt', 'r', encoding='utf-8'
-            ).read()
-        )
-        pass
+    if dataset_json_path is None:
+        dataset_json_path = f'AlzheimersDLNetwork\\data_sample\\data_sample_image_paths.txt'
+    if device is None:
+        device = 'cpu'
+        
+    MRI_images_list = json.loads(
+        open(dataset_json_path, 'r', encoding='utf-8').read()
+    )
 
     random.shuffle(MRI_images_list)
 
@@ -294,7 +282,6 @@ def main(cache_dir_single_read=None):
     training_data = train_loader
     test_data = test_loader
     
-    print(f'### config before-before passing: {const.Config()}')
 
     cache_all_multiprocess(train_dataset.root_dir, train_dataset.data_array)
     cache_all_multiprocess(test_dataset.root_dir, test_dataset.data_array)

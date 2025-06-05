@@ -1,10 +1,18 @@
 import os
 import sys
+from typing import TYPE_CHECKING
 from torch.utils.data import Dataset
 
-parent_dir = os.path.abspath(os.path.join(os.path.dirname(__file__), '..'))
-sys.path.insert(0, parent_dir)
-import const
+# parent_dir = os.path.abspath(os.path.join(os.path.dirname(__file__), '..'))
+# sys.path.insert(0, parent_dir)
+# import const
+
+if not TYPE_CHECKING:
+    const = sys.modules['AlzheimersDLNetwork.const']
+
+if TYPE_CHECKING:
+    import const
+    
 
 from . import data_loader_utils
 
