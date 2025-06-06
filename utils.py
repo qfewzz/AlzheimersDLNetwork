@@ -33,3 +33,10 @@ def set_seed(seed=42):
     # Optionally, fix the hash seed for the Python runtime (useful for reproducibility in some libraries)
     os.environ['PYTHONHASHSEED'] = str(seed)
 
+def number_to_cpu(item):
+    # If item is a PyTorch tensor, ensure it's on the CPU and extract its value.
+    if isinstance(item, torch.Tensor):
+        # If this is a scalar tensor, you can simply use .item()
+        return item.cpu().detach().item()
+    # If it's not a tensor, just return the item as-is.
+    return item

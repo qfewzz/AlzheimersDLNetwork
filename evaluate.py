@@ -144,7 +144,7 @@ def train(model, training_data, optimizer, criterion, device, data_shape):
         epoch_length = 0.000001
 
     accuracy = correct_predictions / total_predictions if total_predictions > 0 else 0.0
-    return epoch_loss / epoch_length, accuracy
+    return utils.number_to_cpu(epoch_loss / epoch_length), accuracy
 
 
 ## Testing Function
@@ -226,7 +226,7 @@ def test(model, test_data, criterion, device, data_shape):
         epoch_length = 0.000001
 
     accuracy = correct_predictions / total_predictions if total_predictions > 0 else 0.0
-    return epoch_loss / epoch_length, accuracy
+    return utils.number_to_cpu(epoch_loss / epoch_length), accuracy
 
 
 def draw_plots(epoches, train_losses, test_losses, train_accuracies, test_accuracies):
