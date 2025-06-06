@@ -23,6 +23,7 @@ class SingletonMeta(type):
 class Config(metaclass=SingletonMeta):
     SEED: int | None = 42
     CHECK_CACHE: bool = True
+    VERBOSE: bool = True
     COMPRESSION: str = 'gzip'
     EPOCHES: int = 30
     LEARNING_RATE: float = 0.1

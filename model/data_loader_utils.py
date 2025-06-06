@@ -176,9 +176,10 @@ def get(
         config_obj,
     )
     time0 = time.time() - time0
-    print(
-        f'\t * got index: {index}/{all_items_count}, used cache: {cache_count}/{total_count}, took {time0:.3f}s'
-    )
+    if config_obj.VERBOSE:
+        print(
+            f'\t * got index: {index}/{all_items_count}, used cache: {cache_count}/{total_count}, took {time0:.3f}s'
+        )
 
     # if cache_count == 0:
     #     print(
