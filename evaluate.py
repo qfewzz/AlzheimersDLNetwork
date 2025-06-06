@@ -303,9 +303,10 @@ def main(dataset_json_path=None, device=None, **args):
 
     training_data = train_loader
     test_data = test_loader
-
-    cache_all_multiprocess(train_dataset.root_dir, train_dataset.data_array)
-    cache_all_multiprocess(test_dataset.root_dir, test_dataset.data_array)
+    
+    if config.CHECK_CACHE:
+        cache_all_multiprocess(train_dataset.root_dir, train_dataset.data_array)
+        cache_all_multiprocess(test_dataset.root_dir, test_dataset.data_array)
 
     ## Define Model
     model = Network(input_size, config.DIMESIONS, output_dimension).to(device)
