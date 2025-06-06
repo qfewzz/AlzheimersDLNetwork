@@ -148,6 +148,8 @@ def get(
         config_obj = const.Config()
     else:
         config_obj: const.Config = pickle.loads(config)
+        
+    config_obj.refresh()
 
     # print(f'### config after passing: {config_obj}')
 

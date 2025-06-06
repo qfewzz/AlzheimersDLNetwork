@@ -24,11 +24,11 @@ import random
 
 # sys.path.insert(1, './model')
 from . import utils
+
 # import model.network
 from .model.network import Network
 from .model.data_loader import MRIData
 from .model.data_loader_utils import cache_all_multiprocess
-
 
 
 # import argparse
@@ -225,26 +225,21 @@ def test(model, test_data, criterion, device, data_shape):
     return epoch_loss / epoch_length, accuracy
 
 
-def main(dataset_json_path=None, device=None, cache_dir_single_read=None):
-    if cache_dir_single_read:
-        const.Config().CACHE_SINGLE_PATH_READ = cache_dir_single_read
-        const.Config().refresh()
-        
-    BATCH_SIZE = 4
+def main(dataset_json_path=None, device=None, **args):
+    config = const.Config()
+    for key, value in args.items():
+        if key is not None:
+            setattr(config, key, value)
+
+    config.refresh()
+
     # Dimensionality of the data outputted by the LSTM,
     # forwarded to the final dense layer.
-    LSTM_output_size = 16
     input_size = 1  # Size of the processed MRI scans fed into the CNN.
 
     output_dimension = 2  # the number of predictions the model will make
     # 2 used for binary prediction for each image.
     # update the splicing used in train()
-
-    learning_rate = 0.1
-    training_epochs = 30
-    # The size of images passed, as a tuple
-    data_shape = const.Config().DIMESIONS
-    # Other hyperparameters unlisted: the depth of the model, the kernel size, the padding, the channel restriction.
 
     ## Import Data
     # MRI_images_list = pickle.load(open("./Data/Combined_MRI_List.pkl", "rb"))
@@ -256,16 +251,15 @@ def main(dataset_json_path=None, device=None, cache_dir_single_read=None):
     # ]
 
     if dataset_json_path is None:
-        dataset_json_path = f'AlzheimersDLNetwork\\data_sample\\data_sample_image_paths.txt'
+        dataset_json_path = (
+            f'AlzheimersDLNetwork\\data_sample\\data_sample_image_paths.txt'
+        )
     if device is None:
         device = 'cpu'
-        
-    MRI_images_list = json.loads(
-        open(dataset_json_path, 'r', encoding='utf-8').read()
-    )
 
+    MRI_images_list = json.loads(open(dataset_json_path, 'r', encoding='utf-8').read())
     random.shuffle(MRI_images_list)
-
+    
     train_size = int(0.8 * len(MRI_images_list))
 
     # Split list
@@ -276,41 +270,40 @@ def main(dataset_json_path=None, device=None, cache_dir_single_read=None):
     train_dataset = MRIData(DATA_ROOT_DIR, training_list)
     test_dataset = MRIData(DATA_ROOT_DIR, test_list)
 
-    train_loader = DataLoader(train_dataset, batch_size=BATCH_SIZE, shuffle=True)
-    test_loader = DataLoader(test_dataset, batch_size=BATCH_SIZE, shuffle=True)
+    train_loader = DataLoader(train_dataset, batch_size=config.BATCH_SIZE, shuffle=True)
+    test_loader = DataLoader(test_dataset, batch_size=config.BATCH_SIZE, shuffle=True)
 
     training_data = train_loader
     test_data = test_loader
-    
 
     cache_all_multiprocess(train_dataset.root_dir, train_dataset.data_array)
     cache_all_multiprocess(test_dataset.root_dir, test_dataset.data_array)
 
     ## Define Model
-    model = Network(input_size, data_shape, output_dimension).to(device)
+    model = Network(input_size, config.DIMESIONS, output_dimension).to(device)
 
     loss_function = nn.CrossEntropyLoss()
 
-    optimizer = optim.SGD(model.parameters(), lr=learning_rate)
+    optimizer = optim.SGD(model.parameters(), lr=config.LEARNING_RATE)
 
     # Perform training and measure test accuracy. Save best performing model.
     best_test_accuracy = float('inf')
 
     # This evaluation workflow below was adapted from Ben Trevett's design
     # on https://github.com/bentrevett/pytorch-seq2seq/blob/master/1%20-%20Sequence%20to%20Sequence%20Learning%20with%20Neural%20Networks.ipynb
-    for epoch in range(training_epochs):
-        print(f'* starting epoch {epoch+1}/{training_epochs}')
+    for epoch in range(config.EPOCHES):
+        print(f'* starting epoch {epoch+1}/{config.EPOCHES}')
         start_time = time.time()
         print('start training...')
 
         train_loss, train_accuracy = train(
-            model, training_data, optimizer, loss_function, device, data_shape
+            model, training_data, optimizer, loss_function, device, config.DIMESIONS
         )
         utils.clear()
 
         print('start testing...')
         test_loss, test_accuracy = test(
-            model, test_data, loss_function, device, data_shape
+            model, test_data, loss_function, device, config.DIMESIONS
         )
         utils.clear()
 
@@ -321,7 +314,7 @@ def main(dataset_json_path=None, device=None, cache_dir_single_read=None):
 
         print()
         print(
-            f"epoch {epoch + 1}/{training_epochs} done | Time: {epoch_mins}m {epoch_secs}s"
+            f"epoch {epoch + 1}/{config.EPOCHES} done | Time: {epoch_mins}m {epoch_secs}s"
         )
         print(f"Train Loss:\t{train_loss:.3f} | Train Accuracy: {train_accuracy:.3f}")
         print(f"Test Loss:\t{test_loss:.3f} | Test Accuracy: {test_accuracy:.3f}")
@@ -333,6 +326,7 @@ def main(dataset_json_path=None, device=None, cache_dir_single_read=None):
 
         print('-' * 20)
         # utils.clear()
+
 
 if __name__ == "__main__":
     main()
