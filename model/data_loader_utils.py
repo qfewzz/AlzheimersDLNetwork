@@ -1,4 +1,4 @@
-from concurrent.futures import Future, ProcessPoolExecutor, ThreadPoolExecutor
+from concurrent.futures import Future, ProcessPoolExecutor, ThreadPoolExecutor, as_completed
 import gzip
 import hashlib
 import os
@@ -186,8 +186,8 @@ def get(
 
 def cache_all_multiprocess(root_dir, data_array):
     print('* start caching all images...')
-    # executor = ProcessPoolExecutor(6)
-    executor = ThreadPoolExecutor(2)
+    executor = ProcessPoolExecutor(6)
+    # executor = ThreadPoolExecutor(2)
     futures: list[Future] = []
 
     for index in range(len(data_array)):
@@ -217,7 +217,7 @@ def cache_all_multiprocess(root_dir, data_array):
         futures.append(future)
 
     print('\ttasks submitted, waiting for them to finish')
-    for index, future in enumerate(futures):
+    for index, future in enumerate(as_completed(futures)):
         try:
             future.result()
         except Exception as e:
