@@ -194,8 +194,7 @@ def get(
     #             print(f'\t\t size: {size_mb:.3f} MB')
 
     if clear:
-        if index % 10 == 0:
-            utils.clear()
+        utils.clear()
         return None
 
     return image_dict
