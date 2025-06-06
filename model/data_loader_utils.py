@@ -175,7 +175,8 @@ def get(
     #             print(f'\t\t size: {size_mb:.3f} MB')
 
     if clear:
-        utils.clear()
+        if index % 10 == 0:
+            utils.clear()
         return None
 
     return image_dict
@@ -193,7 +194,17 @@ def cache_all_multiprocess(root_dir, data_array):
 
         # print(f'### config before passing: {const.Config()}')
 
-        get(
+        # get(
+        #     root_dir,
+        #     current_patient_images_label,
+        #     index,
+        #     len(data_array),
+        #     True,
+        #     pickle.dumps(const.Config()),
+        # )
+
+        future = executor.submit(
+            get,
             root_dir,
             current_patient_images_label,
             index,
@@ -201,27 +212,17 @@ def cache_all_multiprocess(root_dir, data_array):
             True,
             pickle.dumps(const.Config()),
         )
+        futures.append(future)
 
-        # future = executor.submit(
-        #     get,
-        #     root_dir,
-        #     current_patient_images_label,
-        #     index,
-        #     len(data_array),
-        #     True,
-        #     dill.dumps(const.config_instance),
-        # )
-        # futures.append(future)
-
-    # print('\ttasks submitted, waiting for them to finish')
-    # for index, future in enumerate(futures):
-    #     try:
-    #         future.result()
-    #     except Exception as e:
-    #         traceback.print_exception(e)
-    #     # print(f'\r\t* {index+1}/{len(futures)} done!', end='')
-    #     if index % 20 == 0:
-    #         utils.clear()
+    print('\ttasks submitted, waiting for them to finish')
+    for index, future in enumerate(futures):
+        try:
+            future.result()
+        except Exception as e:
+            traceback.print_exception(e)
+        # print(f'\r\t* {index+1}/{len(futures)} done!', end='')
+        if index % 10 == 0:
+            utils.clear()
 
     print(f'\n\tcaching done!')
 
