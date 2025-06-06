@@ -1,4 +1,9 @@
-from concurrent.futures import Future, ProcessPoolExecutor, ThreadPoolExecutor, as_completed
+from concurrent.futures import (
+    Future,
+    ProcessPoolExecutor,
+    ThreadPoolExecutor,
+    as_completed,
+)
 import gzip
 import hashlib
 import os
@@ -28,7 +33,9 @@ if TYPE_CHECKING:
 
 
 def calculate(
-    root_dir, current_patient_images_label: list, config: const.Config = const.Config()
+    root_dir,
+    current_patient_images_label: list,
+    config: const.Config = const.Config(),
 ):
     images_list = []
     patient_images = current_patient_images_label[:-1]
@@ -57,8 +64,12 @@ def calculate(
 
         if cache_path:
             cache_count += 1
-            with gzip.open(cache_path, "rb") as file:
-                image_data_tensor = pickle.load(file)
+            if config.COMPRESSION == 'gzip':
+                with gzip.open(cache_path, "rb") as file:
+                    image_data_tensor = pickle.load(file)
+            else:
+                with open(cache_path, "rb") as file:
+                    image_data_tensor = pickle.load(file)
 
         else:
             use_temp_file = not file_path.endswith('.nii')
@@ -95,10 +106,16 @@ def calculate(
             # Convert image data to a tensor
             image_data_tensor = torch.Tensor(image_data)
 
-            with gzip.open(cache_path_write, "wb", compresslevel=1) as file:
-                image_dict_bytes = pickle.dumps(image_data_tensor)
-                size_before_mb = len(image_dict_bytes) / (1024**2)
-                file.write(image_dict_bytes)
+            if config.COMPRESSION == 'gzip':
+                with gzip.open(cache_path_write, "wb", compresslevel=1) as file:
+                    image_dict_bytes = pickle.dumps(image_data_tensor)
+                    size_before_mb = len(image_dict_bytes) / (1024**2)
+                    file.write(image_dict_bytes)
+            else:
+                with open(cache_path_write, "wb") as file:
+                    image_dict_bytes = pickle.dumps(image_data_tensor)
+                    size_before_mb = len(image_dict_bytes) / (1024**2)
+                    file.write(image_dict_bytes)
 
             os.rename(cache_path_write, cache_path_write_healthy)
             size_after_mb = os.path.getsize(cache_path_write_healthy) / (1024**2)
@@ -148,7 +165,7 @@ def get(
         config_obj = const.Config()
     else:
         config_obj: const.Config = pickle.loads(config)
-        
+
     config_obj.refresh()
 
     # print(f'### config after passing: {config_obj}')

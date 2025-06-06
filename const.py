@@ -22,6 +22,7 @@ class SingletonMeta(type):
 @dataclass
 class Config(metaclass=SingletonMeta):
     SEED: int | None = 42
+    COMPRESSION: str = 'gzip'
     EPOCHES: int = 30
     LEARNING_RATE: float = 0.1
     BATCH_SIZE: int = 4
