@@ -4,6 +4,11 @@ import os
 import sys
 import multiprocessing
 from . import const
+from . import utils
+
+import numpy as np
+import matplotlib.pyplot as plt
+
 
 import gc
 import json
@@ -23,7 +28,6 @@ import random
 
 
 # sys.path.insert(1, './model')
-from . import utils
 
 # import model.network
 from .model.network import Network
@@ -225,9 +229,33 @@ def test(model, test_data, criterion, device, data_shape):
     return epoch_loss / epoch_length, accuracy
 
 
+def draw_plots(epoches, train_losses, test_losses, train_accuracies, test_accuracies):
+    plt.plot(epoches, train_losses, label='train_losses')
+    plt.plot(epoches, test_losses, label='test_losses')
+    plt.xlabel("epoch")
+    plt.ylabel("loss")
+    plt.legend()
+    plt.xticks(epoches)
+    plt.grid()
+    plt.show()
+    
+    plt.plot(epoches, train_accuracies, label='train_accuracies')
+    plt.plot(epoches, test_accuracies, label='test_accuracies')
+    plt.xlabel("epoch")
+    plt.ylabel("loss")
+    plt.legend()
+    plt.xticks(epoches)
+    plt.grid()
+    plt.show()
+
+
 def main(dataset_json_path=None, device=None, **args):
     config = const.Config()
+    config_fields = const.Config.__dataclass_fields__.keys()
+    
     for key, value in args.items():
+        if key not in config_fields:
+            raise Exception(f'the name {key} is not a valid config!')
         if key is not None:
             setattr(config, key, value)
 
@@ -259,7 +287,7 @@ def main(dataset_json_path=None, device=None, **args):
 
     MRI_images_list = json.loads(open(dataset_json_path, 'r', encoding='utf-8').read())
     random.shuffle(MRI_images_list)
-    
+
     train_size = int(0.8 * len(MRI_images_list))
 
     # Split list
@@ -289,43 +317,64 @@ def main(dataset_json_path=None, device=None, **args):
     # Perform training and measure test accuracy. Save best performing model.
     best_test_accuracy = float('inf')
 
+    epoches = []
+    train_losses = []
+    test_losses = []
+    train_accuracies = []
+    test_accuracies = []
+
     # This evaluation workflow below was adapted from Ben Trevett's design
     # on https://github.com/bentrevett/pytorch-seq2seq/blob/master/1%20-%20Sequence%20to%20Sequence%20Learning%20with%20Neural%20Networks.ipynb
-    for epoch in range(config.EPOCHES):
-        print(f'* starting epoch {epoch+1}/{config.EPOCHES}')
-        start_time = time.time()
-        print('start training...')
 
-        train_loss, train_accuracy = train(
-            model, training_data, optimizer, loss_function, device, config.DIMESIONS
-        )
-        utils.clear()
+    try:
+        for epoch in range(config.EPOCHES):
+            print(f'* starting epoch {epoch+1}/{config.EPOCHES}')
+            start_time = time.time()
+            print('start training...')
 
-        print('start testing...')
-        test_loss, test_accuracy = test(
-            model, test_data, loss_function, device, config.DIMESIONS
-        )
-        utils.clear()
+            train_loss, train_accuracy = train(
+                model, training_data, optimizer, loss_function, device, config.DIMESIONS
+            )
+            train_losses.append(train_loss)
+            train_accuracies.append(train_accuracy)
 
-        end_time = time.time()
+            utils.clear()
 
-        epoch_mins = math.floor((end_time - start_time) / 60)
-        epoch_secs = math.floor((end_time - start_time) % 60)
+            print('start testing...')
+            test_loss, test_accuracy = test(
+                model, test_data, loss_function, device, config.DIMESIONS
+            )
+            test_losses.append(test_loss)
+            test_accuracies.append(test_accuracy)
 
-        print()
-        print(
-            f"epoch {epoch + 1}/{config.EPOCHES} done | Time: {epoch_mins}m {epoch_secs}s"
-        )
-        print(f"Train Loss:\t{train_loss:.3f} | Train Accuracy: {train_accuracy:.3f}")
-        print(f"Test Loss:\t{test_loss:.3f} | Test Accuracy: {test_accuracy:.3f}")
+            epoches.append(epoch + 1)
 
-        if test_loss < best_test_accuracy:
-            print("that was our best test accuracy yet!")
-            best_test_accuracy = test_loss
-            torch.save(model.state_dict(), 'ad-model.pt')
+            utils.clear()
+            end_time = time.time()
 
-        print('-' * 20)
-        # utils.clear()
+            epoch_mins = math.floor((end_time - start_time) / 60)
+            epoch_secs = math.floor((end_time - start_time) % 60)
+
+            print()
+            print(
+                f"epoch {epoch + 1}/{config.EPOCHES} done | Time: {epoch_mins}m {epoch_secs}s"
+            )
+            print(
+                f"Train Loss:\t{train_loss:.3f} | Train Accuracy: {train_accuracy:.3f}"
+            )
+            print(f"Test Loss:\t{test_loss:.3f} | Test Accuracy: {test_accuracy:.3f}")
+
+            if test_loss < best_test_accuracy:
+                print("that was our best test accuracy yet!")
+                best_test_accuracy = test_loss
+                torch.save(model.state_dict(), 'ad-model.pt')
+
+            print('-' * 20)
+            # utils.clear()
+    except BaseException as e:
+        print(f'* got exception: {e}')
+    finally:
+        return epoches, train_losses, test_losses, train_accuracies, test_accuracies
 
 
 if __name__ == "__main__":
