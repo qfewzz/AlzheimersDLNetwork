@@ -50,6 +50,7 @@ class Config(metaclass=SingletonMeta):
         os.makedirs(self.CACHE_SINGLE_PATH_WRITE, exist_ok=True)
         os.makedirs(self.TEMP_PATH, exist_ok=True)
         utils.set_seed(self.SEED)
+        self.DIMESIONS = (self.STANDARD_DIM1, self.STANDARD_DIM2, self.STANDARD_DIM3)
 
 
 # import jsonpickle
