@@ -25,6 +25,7 @@ class Config(metaclass=SingletonMeta):
     CHECK_CACHE: bool = True
     VERBOSE: bool = True
     COMPRESSION: str = 'gzip'
+    USE_VT: bool = False
     EPOCHES: int = 30
     LEARNING_RATE: float = 0.1
     BATCH_SIZE: int = 4

@@ -31,6 +31,7 @@ import random
 
 # import model.network
 from .model.network import Network
+from .model.network2 import NetworkWithViT_V2
 from .model.data_loader import MRIData
 from .model.data_loader_utils import cache_all_multiprocess
 
@@ -309,7 +310,10 @@ def main(dataset_json_path=None, device=None, **args):
         cache_all_multiprocess(test_dataset.root_dir, test_dataset.data_array)
 
     ## Define Model
-    model = Network(input_size, config.DIMESIONS, output_dimension).to(device)
+    if config.USE_VT:
+        model = NetworkWithViT_V2(input_size, config.DIMESIONS, output_dimension).to(device)
+    else:
+        model = Network(input_size, config.DIMESIONS, output_dimension).to(device)
 
     loss_function = nn.CrossEntropyLoss()
 
